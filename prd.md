@@ -1,13 +1,14 @@
-Dưới đây là tài liệu **PRD (Product Requirements Document - Tài liệu Đặc tả Yêu cầu Sản phẩm)** được viết theo chuẩn doanh nghiệp công nghệ. Tài liệu này dùng để trình bày với Hội đồng bảo vệ đồ án, Ban Giám hiệu nhà trường, hoặc làm kim chỉ nam cho team Development & Design.
+Dưới đây là tài liệu **PRD (Product Requirements Document - Tài liệu Đặc tả Yêu cầu Sản phẩm)** được viết theo chuẩn doanh nghiệp công nghệ. Tài liệu này dùng để trình bày với Giám đốc RDI và làm kim chỉ nam cho quá trình phát triển.
 
 ---
 
 # TÀI LIỆU ĐẶC TẢ SẢN PHẨM (PRD)
 **Tên dự án:** Ứng dụng AR Lễ Tốt Nghiệp (TVU & DRI AR Graduation App)
-**Nền tảng:** Android / iOS (Ưu tiên Android cho Phase 1)
-**Phiên bản tài liệu:** 1.0
-**Ngày lập:** [Ngày hiện tại]
-**Người lập:** [Tên của bạn - Product Manager / Lead Developer]
+**Nền tảng:** Android (Production), iOS (Future)
+**Phiên bản tài liệu:** 2.0
+**Loại dự án:** Thực tập - Sản phẩm thực tế
+**Người phát triển:** Solo Developer
+**Người phê duyệt:** Giám đốc RDI
 
 ---
 
@@ -46,11 +47,13 @@ Một ứng dụng di động sử dụng công nghệ Thực tế Tăng cườn
     *   Giữ nguyên trong 2s -> Mờ dần (Fade out) và tự động chuyển sang Giao diện Camera.
 
 ### 4.2. Giao diện người dùng cốt lõi (Main Camera UI)
+*   **Công nghệ:** UI Toolkit (UIElements) với UXML layout và USS styling
 *   **Thiết kế UX:** Tối giản, dạng kính ngắm trong suốt (như app Instagram Story).
 *   **Thành phần UI:**
     *   **Top Bar:** Nút Bật/Tắt Đèn Flash điện thoại (Hỗ trợ quét trong hội trường tối). Dòng chữ trạng thái *"Đang tìm kiếm..."*.
     *   **Nút Shutter (Chính giữa dưới):** Chạm (Tap) để chụp ảnh -> Chớp sáng màn hình -> Lưu vào thư viện máy. Nhấn giữ (Hold & Press) để quay video -> Viền nút chuyển đỏ -> Thả tay ra để kết thúc lưu video.
     *   **Carousel Menu (Thanh cuộn ngang):** Chứa các chế độ AR: `[Cúp Dọc]` | `[Bìa Đồ Án Ngang]` | `[Mix Hiệu Ứng]`.
+*   **Hot Reload:** Thay đổi USS/UXML không cần recompile, tăng tốc độ phát triển UI.
 
 ### 4.3. Chức năng Nhận diện (Image Tracking & AR Engine)
 *   **Mode Cúp Dọc:** Camera tìm kiếm mục tiêu hình ảnh mặt trước cúp gỗ. Hệ tọa độ 3D được thiết lập nghiêng 90 độ so với mặt đất ảo (phù hợp với vật thể đứng).
@@ -89,30 +92,69 @@ Một ứng dụng di động sử dụng công nghệ Thực tế Tăng cườn
 ---
 
 ## 6. KIẾN TRÚC CÔNG NGHỆ (TECH STACK)
-*   **Game Engine:** Unity 6 (Hỗ trợ bỏ Splash Screen miễn phí).
-*   **AR SDK:** Vuforia Engine (Mạnh về Image Tracking).
-*   **AI/OCR:** Google ML Kit (Build Native Plugin giao tiếp Java - C#).
-*   **Lập trình:** C# (Logic app), ShaderLab (Viết Depth Mask Shader).
-*   **Công cụ UI/UX:** Unity UI, TextMeshPro, DOTween (tạo chuyển động mượt).
-*   **Plugin hệ thống:** Cross-platform Native Plugins / NatCorder (Hỗ trợ lưu ảnh/quay video vào bộ sưu tập thiết bị).
+*   **Game Engine:** Unity 6 LTS (Hỗ trợ bỏ Splash Screen miễn phí)
+*   **AR Framework:** AR Foundation 6.0 + ARCore XR Plugin (Android)
+*   **Image Tracking:** ARTrackedImageManager với Reference Image Library
+*   **AI/OCR:** Google ML Kit Text Recognition V2 (Native Android Plugin)
+*   **Lập trình:** C# (Logic app), ShaderLab (Depth Mask Shader)
+*   **UI/UX:** UI Toolkit (UIElements) với USS/UXML, TextMeshPro, DOTween Pro (Animation)
+*   **Media Capture:** NatCorder (Screen Recording) hoặc Unity Recorder Package
+*   **Asset Pipeline:** Blender (Optimize 3D), Audacity (Audio processing)
+*   **Version Control:** Git + GitHub (Backup code)
+*   **Testing:** Manual testing trên 100 thiết bị Android thực tế
 
 ---
 
 ## 7. LỘ TRÌNH PHÁT TRIỂN (RELEASE ROADMAP)
-*   **Giai đoạn 1 (MVP - Minimum Viable Product):** 
-    *   Nhận diện 1 loại cúp (Dọc).
-    *   Hiệu ứng mặc định (Rồng Vàng + Pháo giấy).
-    *   Tích hợp OCR nhận tên + Popup xác nhận.
-    *   Chức năng chụp ảnh tĩnh.
-*   **Giai đoạn 2 (Hoàn thiện tính năng & UI):**
-    *   Thêm tính năng quay Video màn hình.
-    *   Xây dựng UI Mix hiệu ứng (Thêm Phượng Hoàng, Bục viễn tưởng).
-    *   Nhận diện đa mục tiêu (Thêm Bìa đồ án ngang).
-    *   Custom Splash Screen TVU & DRI.
-*   **Giai đoạn 3 (Tối ưu & Phát hành):**
-    *   Tối ưu hóa dung lượng (Asset nén).
-    *   Test trên nhiều dòng máy thật.
-    *   Đóng gói file cài đặt (.APK) hoặc đẩy lên Google Play Store.
+
+### **PHASE 0: FOUNDATION (Tuần 1-2)**
+*Mục tiêu: Chuẩn bị môi trường và asset*
+*   Setup Unity 6 + AR Foundation + ARCore
+*   Thu thập và chuẩn bị Image Target (ảnh cúp chất lượng cao)
+*   Tìm và optimize 3D models miễn phí (Rồng, VFX)
+*   Setup Git repository và backup workflow
+
+### **PHASE 1: CORE FEATURES (Tuần 3-5)**
+*Mục tiêu: Xây dựng chức năng cốt lõi*
+*   **Sprint 1:** AR Image Tracking cơ bản (nhận diện cúp, spawn object)
+*   **Sprint 2:** OCR Integration (đọc tên + popup xác nhận)
+*   **Sprint 3:** 3D Content Pipeline (import model, animation, optimize)
+
+### **PHASE 2: POLISH & FEATURES (Tuần 6-8)**
+*Mục tiêu: Hoàn thiện trải nghiệm người dùng*
+*   **Sprint 4:** UI/UX (Splash screen, camera controls, onboarding)
+*   **Sprint 5:** Timeline & VFX (animation sequence, particle effects, audio)
+*   **Sprint 6:** Capture System (chụp ảnh, quay video, lưu vào Gallery)
+
+### **PHASE 3: QA & OPTIMIZATION (Tuần 9-11)**
+*Mục tiêu: Đảm bảo chất lượng sản phẩm*
+*   **Sprint 7:** Performance Tuning (optimize FPS, giảm APK size)
+*   **Sprint 8:** Beta Testing (20-30 người, thu thập feedback)
+*   **Sprint 9:** Mass Testing (100 máy, fix critical bugs)
+
+### **PHASE 4: DEPLOYMENT (Tuần 12)**
+*Mục tiêu: Triển khai sản phẩm*
+*   Viết tài liệu hướng dẫn sử dụng
+*   Build APK final và phân phối
+*   Chuẩn bị presentation demo cho Giám đốc RDI
+*   Backup plan cho ngày tốt nghiệp
+
+## 8. GIỚI HẠN VÀ RỦI RO (CONSTRAINTS & RISKS)
+
+### **Giới hạn**
+*   Ngân sách: $0 (Chỉ sử dụng công cụ và asset miễn phí)
+*   Nhân lực: 1 developer
+*   Thiết bị test: 100 máy Android (đa dạng cấu hình)
+*   Không sử dụng dịch vụ cloud (Firebase, Analytics)
+
+### **Rủi ro kỹ thuật**
+*   OCR có thể đọc sai do vân gỗ hoặc ánh sáng kém → Giải pháp: Popup xác nhận + cho phép sửa tay
+*   Performance không đạt 30 FPS trên máy yếu → Giải pháp: Optimize model, texture, giảm particle count
+*   Image tracking mất dấu khi góc nghiêng → Giải pháp: Hướng dẫn user giữ camera vuông góc
+
+### **Rủi ro vận hành**
+*   App crash trong ngày tốt nghiệp → Giải pháp: Test kỹ trên 100 máy, có backup APK version ổn định
+*   User không biết cách cài APK → Giải pháp: Video hướng dẫn chi tiết + QR code download
 
 ---
-*Tài liệu này là cơ sở để tiến hành Code, thiết kế 3D và nghiệm thu dự án.*
+*Tài liệu này là cơ sở để tiến hành phát triển, testing và nghiệm thu dự án.*
