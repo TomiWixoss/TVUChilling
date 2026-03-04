@@ -216,16 +216,16 @@ git push -u origin dev
 
 ## CHECKLIST HOÀN THÀNH PHASE 0
 
-- [ ] Unity 6 LTS đã cài với Android Build Support
-- [ ] Project mới đã tạo với template 3D (URP)
-- [ ] AR Foundation + ARCore XR Plugin đã cài
-- [ ] XR Plug-in Management đã enable ARCore
-- [ ] Git repository đã tạo và commit code lần đầu
-- [ ] Ảnh cúp đã chụp và import vào Unity
-- [ ] Reference Image Library đã tạo với Physical Size chính xác
-- [ ] 3D assets (Rồng, VFX, SFX) đã download
-- [ ] Build APK test thành công và chạy được trên điện thoại
-- [ ] Không có lỗi đỏ trong Console
+- [x] Unity 6 LTS đã cài với Android Build Support
+- [x] Project mới đã tạo với template Universal 3D (URP)
+- [x] AR Foundation + ARCore XR Plugin đã cài
+- [x] XR Plug-in Management đã enable ARCore
+- [x] Git repository đã tạo và commit code lần đầu
+- [x] Ảnh cúp đã chụp và import vào Unity
+- [x] Reference Image Library đã tạo với Physical Size chính xác
+- [ ] 3D assets (Phượng Hoàng, VFX, SFX) đã download - TÌM SAU
+- [x] Build APK test thành công và chạy được trên điện thoại
+- [x] Không có lỗi đỏ trong Console
 
 **✅ Nếu tất cả đã xong → Chuyển sang `phase1-sprint1.md`**
 
