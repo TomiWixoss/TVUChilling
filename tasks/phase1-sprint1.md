@@ -203,13 +203,13 @@ public class ARImageTracker : MonoBehaviour
 ## BƯỚC 6: VERIFY VÀ COMMIT
 
 ### Checklist Sprint 1
-- [ ] AR Scene đã setup với XR Origin + AR Session
-- [ ] Reference Image Library đã tạo và gán đúng
-- [ ] AR Tracked Image Manager hoạt động
-- [ ] Cube test xuất hiện khi quét ảnh cúp
-- [ ] Script ARImageTracker log ra console đúng
-- [ ] Không có lỗi đỏ trong Console
-- [ ] Build APK thành công và test trên thiết bị thật
+- [x] AR Scene đã setup với XR Origin + AR Session
+- [x] Reference Image Library đã tạo và gán đúng
+- [x] AR Tracked Image Manager hoạt động
+- [x] Cube test xuất hiện khi quét ảnh cúp
+- [x] ARBackgroundRendererFeature đã thêm vào URP Renderer (fix màu vàng)
+- [x] Camera feed hiển thị đúng
+- [x] Build APK thành công và test trên thiết bị thật
 
 ### Commit code
 ```bash
