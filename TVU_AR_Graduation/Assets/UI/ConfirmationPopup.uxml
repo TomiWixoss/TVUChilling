@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/ConfirmationPopup.uss?fileID=7433441132597879392&amp;guid=08c57660475cb7b44a53b99a6e573fdf&amp;type=3#ConfirmationPopup"/>
+    <ui:VisualElement name="overlay" class="overlay">
+        <ui:VisualElement name="popup-container" class="popup-container">
+            <ui:Label text="Xác nhận danh tính" name="title-label" class="title-label"/>
+            <ui:TextField name="name-input" class="name-input"/>
+            <ui:VisualElement name="button-container" class="button-container">
+                <ui:Button text="Kích hoạt" name="confirm-button" class="confirm-button"/>
+                <ui:Button text="Hủy" name="cancel-button" class="cancel-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

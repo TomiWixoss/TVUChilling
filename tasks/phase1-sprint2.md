@@ -185,89 +185,178 @@ public static class NameParser
 
 ---
 
-## BƯỚC 5: TẠO POPUP XÁC NHẬN
+## BƯỚC 5: TẠO POPUP XÁC NHẬN (UI TOOLKIT)
 
-### Tạo Canvas UI
-- [ ] Hierarchy > Chuột phải > UI > Canvas
+### Tạo UXML (UI Structure)
+- [ ] Project window > `Assets/UI/` (tạo folder nếu chưa có)
+- [ ] Chuột phải > Create > UI Toolkit > UI Document
+- [ ] Đặt tên: `ConfirmationPopup.uxml`
+- [ ] Double click để mở UI Builder
+
+### Thiết kế UI trong UI Builder
+- [ ] Thêm **VisualElement** (root container):
+  - [ ] Name: `popup-overlay`
+  - [ ] Style:
+    - [ ] Position: Absolute
+    - [ ] Width/Height: 100%
+    - [ ] Background Color: rgba(0, 0, 0, 0.8)
+    - [ ] Display: None (ẩn mặc định)
+
+- [ ] Thêm **VisualElement** con (content panel):
+  - [ ] Name: `popup-content`
+  - [ ] Style:
+    - [ ] Width: 800px
+    - [ ] Height: 600px
+    - [ ] Align: Center
+    - [ ] Background Color: White
+    - [ ] Border Radius: 20px
+    - [ ] Padding: 40px
+
+- [ ] Thêm **Label** (tiêu đề):
+  - [ ] Name: `title-label`
+  - [ ] Text: "Hệ thống nhận diện bạn là:"
+  - [ ] Style:
+    - [ ] Font Size: 48px
+    - [ ] Text Align: Center
+    - [ ] Margin Bottom: 40px
+
+- [ ] Thêm **TextField** (input tên):
+  - [ ] Name: `name-input`
+  - [ ] Placeholder: "Nhập tên của bạn"
+  - [ ] Style:
+    - [ ] Font Size: 40px
+    - [ ] Height: 80px
+    - [ ] Margin Bottom: 40px
+
+- [ ] Thêm **VisualElement** (button container):
+  - [ ] Name: `button-container`
+  - [ ] Style:
+    - [ ] Flex Direction: Row
+    - [ ] Justify Content: Space Between
+
+- [ ] Thêm **Button** (Kích hoạt):
+  - [ ] Name: `confirm-button`
+  - [ ] Text: "Kích hoạt"
+  - [ ] Style:
+    - [ ] Width: 350px
+    - [ ] Height: 100px
+    - [ ] Font Size: 36px
+    - [ ] Background Color: Green
+
+- [ ] Thêm **Button** (Hủy):
+  - [ ] Name: `cancel-button`
+  - [ ] Text: "Hủy"
+  - [ ] Style:
+    - [ ] Width: 350px
+    - [ ] Height: 100px
+    - [ ] Font Size: 36px
+    - [ ] Background Color: Red
+
+- [ ] Save UXML (Ctrl+S)
+
+### Tạo USS (Styling - Optional)
+- [ ] Project window > `Assets/UI/`
+- [ ] Chuột phải > Create > UI Toolkit > Style Sheet
+- [ ] Đặt tên: `ConfirmationPopup.uss`
+- [ ] Thêm styles (nếu cần custom thêm):
+
+```css
+.popup-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-content {
+    width: 800px;
+    height: 600px;
+    background-color: white;
+    border-radius: 20px;
+    padding: 40px;
+}
+
+.title-label {
+    font-size: 48px;
+    -unity-text-align: middle-center;
+    margin-bottom: 40px;
+}
+
+.name-input {
+    font-size: 40px;
+    height: 80px;
+    margin-bottom: 40px;
+}
+
+.button-container {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.confirm-button {
+    width: 350px;
+    height: 100px;
+    font-size: 36px;
+    background-color: rgb(76, 175, 80);
+}
+
+.cancel-button {
+    width: 350px;
+    height: 100px;
+    font-size: 36px;
+    background-color: rgb(244, 67, 54);
+}
+```
+- [ ] Save USS
+
+### Thêm UI Document vào Scene
+- [ ] Hierarchy > Chuột phải > UI Toolkit > UI Document
 - [ ] Đặt tên: `ConfirmationUI`
-- [ ] Canvas Scaler:
-  - [ ] UI Scale Mode: **Scale With Screen Size**
-  - [ ] Reference Resolution: **1080 x 1920**
-
-### Tạo Panel background
-- [ ] Chuột phải vào Canvas > UI > Panel
-- [ ] Đặt tên: `PopupPanel`
-- [ ] Rect Transform: Stretch (full screen)
-- [ ] Image component:
-  - [ ] Color: Đen, Alpha = 200 (tối mờ)
-
-### Tạo Popup content
-- [ ] Chuột phải vào PopupPanel > UI > Panel
-- [ ] Đặt tên: `ContentPanel`
-- [ ] Rect Transform:
-  - [ ] Width: 800
-  - [ ] Height: 600
-  - [ ] Anchor: Center
-- [ ] Image: Trắng, Alpha = 255
-
-### Thêm Text tiêu đề
-- [ ] Chuột phải vào ContentPanel > UI > Text - TextMeshPro
-- [ ] Đặt tên: `TitleText`
-- [ ] Text: "Hệ thống nhận diện bạn là:"
-- [ ] Font Size: 48
-- [ ] Alignment: Center
-- [ ] Position: Top của ContentPanel
-
-### Thêm InputField
-- [ ] Chuột phải vào ContentPanel > UI > InputField - TextMeshPro
-- [ ] Đặt tên: `NameInputField`
-- [ ] Placeholder: "Nhập tên của bạn"
-- [ ] Font Size: 40
-- [ ] Position: Center của ContentPanel
-
-### Thêm Button "Kích hoạt"
-- [ ] Chuột phải vào ContentPanel > UI > Button - TextMeshPro
-- [ ] Đặt tên: `ConfirmButton`
-- [ ] Text: "Kích hoạt"
-- [ ] Font Size: 36
-- [ ] Position: Bottom left của ContentPanel
-
-### Thêm Button "Hủy"
-- [ ] Duplicate ConfirmButton
-- [ ] Đặt tên: `CancelButton`
-- [ ] Text: "Hủy"
-- [ ] Position: Bottom right của ContentPanel
-
-### Ẩn popup mặc định
-- [ ] Chọn `PopupPanel`
-- [ ] Inspector: Bỏ tick ở checkbox bên cạnh tên (disable)
+- [ ] Inspector > Source Asset: Kéo `ConfirmationPopup.uxml` vào
+- [ ] (Optional) Style Sheet: Kéo `ConfirmationPopup.uss` vào nếu có
 
 ---
 
-## BƯỚC 6: VIẾT SCRIPT POPUP MANAGER
+## BƯỚC 6: VIẾT SCRIPT POPUP MANAGER (UI TOOLKIT)
 
 ### Tạo script PopupManager.cs
 ```csharp
 using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 public class PopupManager : MonoBehaviour
 {
-    [SerializeField] private GameObject popupPanel;
-    [SerializeField] private TMP_InputField nameInputField;
-    [SerializeField] private Button confirmButton;
-    [SerializeField] private Button cancelButton;
+    private UIDocument uiDocument;
+    private VisualElement popupOverlay;
+    private TextField nameInput;
+    private Button confirmButton;
+    private Button cancelButton;
     
     private string recognizedName;
     
     void Start()
     {
-        confirmButton.onClick.AddListener(OnConfirmClicked);
-        cancelButton.onClick.AddListener(OnCancelClicked);
+        // Get UI Document
+        uiDocument = GetComponent<UIDocument>();
+        var root = uiDocument.rootVisualElement;
+        
+        // Query UI elements
+        popupOverlay = root.Q<VisualElement>("popup-overlay");
+        nameInput = root.Q<TextField>("name-input");
+        confirmButton = root.Q<Button>("confirm-button");
+        cancelButton = root.Q<Button>("cancel-button");
+        
+        // Register button callbacks
+        confirmButton.clicked += OnConfirmClicked;
+        cancelButton.clicked += OnCancelClicked;
         
         // Subscribe to OCR event
         OCRManager.Instance.OnTextRecognized += ShowPopup;
+        
+        // Hide popup initially
+        HidePopup();
     }
     
     void ShowPopup(string ocrText)
@@ -275,41 +364,51 @@ public class PopupManager : MonoBehaviour
         // Parse tên từ OCR text
         recognizedName = NameParser.ExtractStudentName(ocrText);
         
-        // Hiển thị trong InputField
-        nameInputField.text = recognizedName;
+        // Set text in input field
+        nameInput.value = recognizedName;
         
-        // Show popup
-        popupPanel.SetActive(true);
+        // Show popup (change display from none to flex)
+        popupOverlay.style.display = DisplayStyle.Flex;
+    }
+    
+    void HidePopup()
+    {
+        popupOverlay.style.display = DisplayStyle.None;
     }
     
     void OnConfirmClicked()
     {
-        string finalName = nameInputField.text;
+        string finalName = nameInput.value;
         Debug.Log($"User confirmed name: {finalName}");
         
         // TODO: Trigger AR animation với tên này
         
-        // Hide popup
-        popupPanel.SetActive(false);
+        HidePopup();
     }
     
     void OnCancelClicked()
     {
         Debug.Log("User cancelled");
-        popupPanel.SetActive(false);
+        HidePopup();
+    }
+    
+    void OnDestroy()
+    {
+        // Unregister callbacks
+        if (confirmButton != null)
+            confirmButton.clicked -= OnConfirmClicked;
+        if (cancelButton != null)
+            cancelButton.clicked -= OnCancelClicked;
     }
 }
 ```
 - [ ] Copy code vào `PopupManager.cs`
+- [ ] Save file
 
-### Gắn script và references
-- [ ] Chọn Canvas `ConfirmationUI`
+### Gắn script vào UI Document
+- [ ] Chọn GameObject `ConfirmationUI` trong Hierarchy
 - [ ] Add Component: `PopupManager`
-- [ ] Kéo các UI elements vào fields:
-  - [ ] Popup Panel: `PopupPanel`
-  - [ ] Name Input Field: `NameInputField`
-  - [ ] Confirm Button: `ConfirmButton`
-  - [ ] Cancel Button: `CancelButton`
+- [ ] Verify: UIDocument component đã có Source Asset = `ConfirmationPopup.uxml`
 
 ---
 
