@@ -61,16 +61,20 @@ KHOA CÔNG NGHỆ THÔNG TIN";
     #if UNITY_ANDROID && !UNITY_EDITOR
     private void RecognizeTextNative(byte[] imageBytes)
     {
-        // TODO: Implement native call to ML Kit
-        // Sẽ cần viết Java/Kotlin plugin
-        Debug.Log("ML Kit OCR not implemented yet - using mock data");
-        
-        // Mock for now
-        string mockOCRText = @"TRƯỜNG ĐẠI HỌC TRÀ VINH
-CỬ NHÂN
-NGUYỄN VĂN A
-KHOA CÔNG NGHỆ THÔNG TIN";
-        OnTextRecognitionComplete(mockOCRText);
+        try
+        {
+            // Call Java plugin
+            using (AndroidJavaClass mlkitClass = new AndroidJavaClass("com.tvu.argraduation.MLKitTextRecognizer"))
+            {
+                mlkitClass.CallStatic("RecognizeText", imageBytes);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to call ML Kit plugin: {e.Message}");
+            // Fallback to mock
+            OnTextRecognitionComplete("ERROR: ML Kit plugin failed");
+        }
     }
     #endif
     

@@ -363,6 +363,7 @@ GameObject:
   - component: {fileID: 1400584839}
   - component: {fileID: 1400584838}
   - component: {fileID: 1400584840}
+  - component: {fileID: 1400584841}
   m_Layer: 0
   m_Name: XR Origin
   m_TagString: Untagged
@@ -421,6 +422,18 @@ MonoBehaviour:
   m_SerializedLibrary: {fileID: 11400000, guid: 7a3a9206de0b3fe42a97add72805fb1e, type: 2}
   m_MaxNumberOfMovingImages: 1
   m_TrackedImagePrefab: {fileID: 1390010523618399403, guid: 5c26e3347401798428c9adce3a979d6b, type: 3}
+--- !u!114 &1400584841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1400584837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f8e9a1b2c3d4e5f6a7b8c9d0e1f2a3b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ARImageTracker
 --- !u!1 &1605271435
 GameObject:
   m_ObjectHideFlags: 0
