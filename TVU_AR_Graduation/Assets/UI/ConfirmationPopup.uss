@@ -1,102 +1,240 @@
-/* Overlay - Transparent để thấy AR */
-.overlay {
+/* ==========================================================
+   AWWWARDS × Google AR — Confirmation Popup
+   Full custom · Zero Unity defaults · Premium Mobile AR
+   ========================================================== */
+
+
+/* ─────────────────────────────────────────────────────────
+   OVERLAY
+   ───────────────────────────────────────────────────────── */
+.confirmation-overlay {
     position: absolute;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.4);
     align-items: center;
     justify-content: flex-end;
-    padding-bottom: 80px;
+    padding-bottom: 48px;
+    padding-left: 20px;
+    padding-right: 20px;
+    transition-property: opacity;
+    transition-duration: 350ms;
+    transition-timing-function: ease-in-out-cubic;
 }
 
-/* Popup - Compact card ở dưới màn hình */
-.popup-container {
-    width: 90%;
-    max-width: 480px;
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
-    padding: 24px 20px;
-    align-items: center;
+
+/* ─────────────────────────────────────────────────────────
+   CARD — frosted glass panel
+   ───────────────────────────────────────────────────────── */
+.confirmation-card {
+    width: 100%;
+    max-width: 400px;
+    background-color: rgba(255, 255, 255, 0.78);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    padding-top: 36px;
+    padding-bottom: 24px;
+    padding-left: 28px;
+    padding-right: 28px;
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.5);
+    transition-property: translate, opacity, scale;
+    transition-duration: 400ms;
+    transition-timing-function: ease-out-cubic;
 }
 
-/* Title - Compact */
-.title-label {
-    font-size: 18px;
-    color: rgb(33, 33, 33);
-    -unity-text-align: middle-center;
-    margin-bottom: 16px;
+
+/* ─────────────────────────────────────────────────────────
+   TITLE — Label full custom
+   ───────────────────────────────────────────────────────── */
+.confirmation-card__title {
+    font-size: 24px;
+    color: rgba(15, 15, 15, 0.92);
+    -unity-text-align: middle-left;
     -unity-font-style: bold;
-    letter-spacing: 0.3px;
+    margin-top: 0;
+    margin-bottom: 6px;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
+    letter-spacing: 0.2px;
+    white-space: normal;
+    overflow: hidden;
 }
 
-/* Input - Clean minimal */
-.name-input {
-    width: 100%;
-    height: 48px;
-    font-size: 18px;
-    border-width: 0 0 2px 0;
-    border-color: rgba(33, 150, 243, 0.4);
-    border-radius: 0;
-    padding: 8px 12px;
-    background-color: rgba(33, 150, 243, 0.05);
-    color: rgb(33, 33, 33);
-    margin-bottom: 20px;
-}
 
-.name-input:focus {
-    border-color: rgb(33, 150, 243);
-    background-color: rgba(33, 150, 243, 0.1);
-}
-
-/* Buttons - Side by side */
-.button-container {
-    flex-direction: row;
-    width: 100%;
-    justify-content: space-between;
-}
-
-/* Confirm button */
-.confirm-button {
-    width: 48%;
-    height: 44px;
-    font-size: 15px;
-    background-color: rgb(33, 150, 243);
-    color: rgb(255, 255, 255);
-    border-radius: 22px;
+/* ─────────────────────────────────────────────────────────
+   INPUT — outer wrapper reset
+   ───────────────────────────────────────────────────────── */
+.confirmation-card__input {
+    margin-top: 8px;
+    margin-bottom: 28px;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
     border-width: 0;
-    -unity-font-style: bold;
-    letter-spacing: 0.5px;
-}
-
-.confirm-button:hover {
-    background-color: rgb(25, 118, 210);
-}
-
-.confirm-button:active {
-    scale: 0.96;
-}
-
-/* Cancel button */
-.cancel-button {
-    width: 48%;
-    height: 44px;
-    font-size: 15px;
     background-color: rgba(0, 0, 0, 0);
-    color: rgb(97, 97, 97);
-    border-radius: 22px;
-    border-width: 1.5px;
-    border-color: rgba(158, 158, 158, 0.5);
+}
+
+/* ── Kill Unity default label inside TextField ── */
+.confirmation-card__input .unity-label {
+    display: none;
+}
+
+/* ── The real input box ── */
+.confirmation-card__input .unity-text-field__input {
+    height: 54px;
+    font-size: 17px;
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-color: rgba(0, 0, 0, 0.1);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-left: 18px;
+    padding-right: 18px;
+    padding-top: 14px;
+    padding-bottom: 12px;
+    margin: 0;
+    background-color: rgba(0, 0, 0, 0.035);
+    --unity-cursor-color: rgb(26, 115, 232);
+    transition-property: border-color, background-color;
+    transition-duration: 280ms;
+    transition-timing-function: ease-in-out-cubic;
+}
+
+/* ── Input text element ── */
+.confirmation-card__input .unity-text-field__input .unity-text-element {
+    font-size: 17px;
+    color: rgb(15, 15, 15);
     -unity-font-style: normal;
+    margin: 0;
+    padding: 0;
+}
+
+/* ── Focus — Google Blue accent line ── */
+.confirmation-card__input:focus-within .unity-text-field__input {
+    border-color: rgb(26, 115, 232);
+    background-color: rgba(26, 115, 232, 0.05);
+    border-bottom-width: 3px;
+}
+
+/* ── Kill Unity default blue focus outline ── */
+.confirmation-card__input:focus .unity-text-field__input {
+    border-color: rgb(26, 115, 232);
+    background-color: rgba(26, 115, 232, 0.05);
+    border-bottom-width: 3px;
+}
+
+/* ── Hover ── */
+.confirmation-card__input:hover .unity-text-field__input {
+    background-color: rgba(0, 0, 0, 0.055);
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   ACTIONS — button row
+   ───────────────────────────────────────────────────────── */
+.confirmation-card__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   BUTTON — full reset + custom
+   ───────────────────────────────────────────────────────── */
+.confirmation-card__button {
+    height: 48px;
+    min-width: 0;
+    border-width: 0;
+    margin: 0;
+    padding-left: 28px;
+    padding-right: 28px;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    -unity-font-style: bold;
+    transition-property: background-color, scale, opacity, border-color;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out-cubic;
+}
+
+/* ── Button internal text ── */
+.confirmation-card__button .unity-text-element {
+    font-size: 14px;
     letter-spacing: 0.5px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
 }
 
-.cancel-button:hover {
+/* ── Kill Unity default button visuals ── */
+.confirmation-card__button:focus {
+    border-width: 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   PRIMARY BUTTON — Google Blue #1A73E8
+   ───────────────────────────────────────────────────────── */
+.confirmation-card__button--primary {
+    background-color: rgb(26, 115, 232);
+    color: rgb(255, 255, 255);
+    margin-left: 12px;
+}
+
+.confirmation-card__button--primary .unity-text-element {
+    color: rgb(255, 255, 255);
+}
+
+.confirmation-card__button--primary:hover {
+    background-color: rgb(21, 101, 214);
+    color: rgb(255, 255, 255);
+    scale: 1.04 1.04;
+}
+
+.confirmation-card__button--primary:active {
+    background-color: rgb(17, 85, 190);
+    color: rgb(255, 255, 255);
+    scale: 0.96 0.96;
+}
+
+.confirmation-card__button--primary:focus {
+    background-color: rgb(21, 101, 214);
+    color: rgb(255, 255, 255);
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   SECONDARY BUTTON — ghost / transparent
+   ───────────────────────────────────────────────────────── */
+.confirmation-card__button--secondary {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.confirmation-card__button--secondary .unity-text-element {
+    color: rgb(95, 99, 104);
+}
+
+.confirmation-card__button--secondary:hover {
     background-color: rgba(0, 0, 0, 0.05);
-    border-color: rgb(117, 117, 117);
 }
 
-.cancel-button:active {
-    scale: 0.96;
+.confirmation-card__button--secondary:active {
+    background-color: rgba(0, 0, 0, 0.09);
+    scale: 0.96 0.96;
+}
+
+.confirmation-card__button--secondary:focus {
+    background-color: rgba(0, 0, 0, 0.03);
 }

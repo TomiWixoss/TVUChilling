@@ -30,8 +30,8 @@ public class PopupManager : MonoBehaviour
         // Get root visual element
         var root = uiDocument.rootVisualElement;
         
-        // Query UI elements
-        overlay = root.Q<VisualElement>("overlay");
+        // Query UI elements with new BEM names
+        overlay = root.Q<VisualElement>("confirmation-overlay");
         nameInput = root.Q<TextField>("name-input");
         confirmButton = root.Q<Button>("confirm-button");
         cancelButton = root.Q<Button>("cancel-button");
