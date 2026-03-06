@@ -28,16 +28,16 @@
    ───────────────────────────────────────────────────────── */
 .confirmation-card {
     width: 100%;
-    max-width: 400px;
+    max-width: 340px;
     background-color: rgba(255, 255, 255, 0.78);
-    border-top-left-radius: 28px;
-    border-top-right-radius: 28px;
-    border-bottom-left-radius: 28px;
-    border-bottom-right-radius: 28px;
-    padding-top: 36px;
-    padding-bottom: 24px;
-    padding-left: 28px;
-    padding-right: 28px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    padding-top: 24px;
+    padding-bottom: 18px;
+    padding-left: 20px;
+    padding-right: 20px;
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.5);
     transition-property: translate, opacity, scale;
@@ -50,12 +50,12 @@
    TITLE — Label full custom
    ───────────────────────────────────────────────────────── */
 .confirmation-card__title {
-    font-size: 24px;
+    font-size: 18px;
     color: rgba(15, 15, 15, 0.92);
     -unity-text-align: middle-left;
     -unity-font-style: bold;
     margin-top: 0;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     margin-left: 0;
     margin-right: 0;
     padding: 0;
@@ -85,19 +85,19 @@
 
 /* ── The real input box ── */
 .confirmation-card__input .unity-text-field__input {
-    height: 54px;
-    font-size: 17px;
+    height: 44px;
+    font-size: 15px;
     border-width: 0;
     border-bottom-width: 2px;
     border-color: rgba(0, 0, 0, 0.1);
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    padding-left: 18px;
-    padding-right: 18px;
-    padding-top: 14px;
-    padding-bottom: 12px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     margin: 0;
     background-color: rgba(0, 0, 0, 0.035);
     --unity-cursor-color: rgb(26, 115, 232);
@@ -108,7 +108,7 @@
 
 /* ── Input text element ── */
 .confirmation-card__input .unity-text-field__input .unity-text-element {
-    font-size: 17px;
+    font-size: 15px;
     color: rgb(15, 15, 15);
     -unity-font-style: normal;
     margin: 0;
@@ -150,18 +150,18 @@
    BUTTON — full reset + custom
    ───────────────────────────────────────────────────────── */
 .confirmation-card__button {
-    height: 48px;
+    height: 40px;
     min-width: 0;
     border-width: 0;
     margin: 0;
-    padding-left: 28px;
-    padding-right: 28px;
+    padding-left: 22px;
+    padding-right: 22px;
     padding-top: 0;
     padding-bottom: 0;
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
-    border-bottom-left-radius: 24px;
-    border-bottom-right-radius: 24px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
     -unity-font-style: bold;
     transition-property: background-color, scale, opacity, border-color;
     transition-duration: 180ms;
@@ -170,7 +170,7 @@
 
 /* ── Button internal text ── */
 .confirmation-card__button .unity-text-element {
-    font-size: 14px;
+    font-size: 13px;
     letter-spacing: 0.5px;
     -unity-text-align: middle-center;
     -unity-font-style: bold;

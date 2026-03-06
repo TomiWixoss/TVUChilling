@@ -8,6 +8,10 @@ public class ARImageTracker : MonoBehaviour
 {
     private ARTrackedImageManager trackedImageManager;
     private bool isProcessingOCR = false;
+    private bool isWaitingForGoodTracking = false;
+    
+    [Header("Tracking Quality Settings")]
+    [SerializeField] private float minTrackingQualityTime = 0.5f; // Đợi 0.5s tracking tốt
     
     void Awake()
     {
@@ -31,59 +35,80 @@ public class ARImageTracker : MonoBehaviour
         {
             Debug.Log($"Image detected: {trackedImage.referenceImage.name}");
             
-            // Chỉ xử lý OCR một lần
-            if (!isProcessingOCR && trackedImage.trackingState == TrackingState.Tracking)
+            // Bắt đầu đợi tracking tốt
+            if (!isProcessingOCR && !isWaitingForGoodTracking)
             {
-                StartCoroutine(CaptureAndProcessOCR());
+                Debug.Log("Waiting for good tracking quality...");
+                isWaitingForGoodTracking = true;
+                StartCoroutine(WaitForGoodTrackingAndCapture(trackedImage));
             }
         }
         
-        // Khi ảnh được track lại (sau khi mất)
+        // Khi ảnh được track lại
         foreach (var trackedImage in eventArgs.updated)
         {
             if (trackedImage.trackingState == TrackingState.Tracking)
             {
-                Debug.Log($"Image tracking: {trackedImage.referenceImage.name}");
+                // Nếu đang đợi tracking tốt, check quality
+                if (isWaitingForGoodTracking && !isProcessingOCR)
+                {
+                    // ARFoundation không expose tracking quality trực tiếp
+                    // Nhưng ta có thể dùng trackingState == Tracking như indicator
+                    Debug.Log($"Image tracking: {trackedImage.referenceImage.name}");
+                }
             }
         }
     }
     
-    IEnumerator CaptureAndProcessOCR()
+    IEnumerator WaitForGoodTrackingAndCapture(ARTrackedImage trackedImage)
     {
-        isProcessingOCR = true;
+        Debug.Log("Waiting for stable tracking...");
         
-        Debug.Log("Capturing screenshot for OCR...");
+        // Đợi một chút để tracking ổn định
+        yield return new WaitForSeconds(minTrackingQualityTime);
         
-        // Chờ 1 frame để camera render xong
-        yield return new WaitForEndOfFrame();
-        
-        // Capture screenshot
-        Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
-        
-        if (screenshot != null)
+        // Check xem ảnh vẫn đang được track không
+        if (trackedImage != null && trackedImage.trackingState == TrackingState.Tracking)
         {
-            Debug.Log($"Screenshot captured: {screenshot.width}x{screenshot.height}");
+            Debug.Log("Good tracking detected! Capturing now...");
+            isWaitingForGoodTracking = false;
+            isProcessingOCR = true;
             
-            // Gọi OCRManager để xử lý
-            if (OCRManager.Instance != null)
+            yield return new WaitForEndOfFrame();
+            
+            // Capture screenshot
+            Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
+            
+            if (screenshot != null)
             {
-                OCRManager.Instance.ProcessImage(screenshot);
+                Debug.Log($"Screenshot captured: {screenshot.width}x{screenshot.height}");
+                
+                // Gọi OCRManager để xử lý
+                if (OCRManager.Instance != null)
+                {
+                    OCRManager.Instance.ProcessImage(screenshot);
+                }
+                else
+                {
+                    Debug.LogError("OCRManager.Instance is null!");
+                }
+                
+                // Giải phóng memory
+                Destroy(screenshot);
             }
             else
             {
-                Debug.LogError("OCRManager.Instance is null!");
+                Debug.LogError("Failed to capture screenshot!");
             }
             
-            // Giải phóng memory
-            Destroy(screenshot);
+            // Reset flag sau 5 giây (cho phép scan lại)
+            yield return new WaitForSeconds(5f);
+            isProcessingOCR = false;
         }
         else
         {
-            Debug.LogError("Failed to capture screenshot!");
+            Debug.LogWarning("Tracking lost before capture!");
+            isWaitingForGoodTracking = false;
         }
-        
-        // Reset flag sau 3 giây (cho phép scan lại)
-        yield return new WaitForSeconds(3f);
-        isProcessingOCR = false;
     }
 }
