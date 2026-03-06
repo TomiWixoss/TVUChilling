@@ -1,114 +1,75 @@
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
-using System.Collections;
+using System.Collections.Generic;
 
+/// <summary>
+/// AR Image Tracker - Core only
+/// Phát hiện image target và hiển thị prefab (cube) lên trên ảnh được track.
+/// </summary>
 [RequireComponent(typeof(ARTrackedImageManager))]
 public class ARImageTracker : MonoBehaviour
 {
+    [Header("Prefab Settings")]
+    [SerializeField] private GameObject trackedPrefab; // Kéo TestCube prefab vào đây
+
     private ARTrackedImageManager trackedImageManager;
-    private bool isProcessingOCR = false;
-    private bool isWaitingForGoodTracking = false;
-    
-    [Header("Tracking Quality Settings")]
-    [SerializeField] private float minTrackingQualityTime = 0.5f; // Đợi 0.5s tracking tốt
-    
+    private Dictionary<string, GameObject> spawnedObjects = new Dictionary<string, GameObject>();
+
     void Awake()
     {
         trackedImageManager = GetComponent<ARTrackedImageManager>();
     }
-    
+
     void OnEnable()
     {
         trackedImageManager.trackedImagesChanged += OnTrackedImagesChanged;
     }
-    
+
     void OnDisable()
     {
         trackedImageManager.trackedImagesChanged -= OnTrackedImagesChanged;
     }
-    
+
     void OnTrackedImagesChanged(ARTrackedImagesChangedEventArgs eventArgs)
     {
-        // Khi phát hiện ảnh mới
+        // Khi phát hiện ảnh mới → Spawn prefab
         foreach (var trackedImage in eventArgs.added)
         {
-            Debug.Log($"Image detected: {trackedImage.referenceImage.name}");
-            
-            // Bắt đầu đợi tracking tốt
-            if (!isProcessingOCR && !isWaitingForGoodTracking)
+            string imageName = trackedImage.referenceImage.name;
+            Debug.Log($"[AR] Image detected: {imageName}");
+
+            if (!spawnedObjects.ContainsKey(imageName))
             {
-                Debug.Log("Waiting for good tracking quality...");
-                isWaitingForGoodTracking = true;
-                StartCoroutine(WaitForGoodTrackingAndCapture(trackedImage));
+                GameObject obj = Instantiate(trackedPrefab, trackedImage.transform);
+                obj.SetActive(true);
+                spawnedObjects[imageName] = obj;
+                Debug.Log($"[AR] Spawned object for: {imageName}");
             }
         }
-        
-        // Khi ảnh được track lại
+
+        // Khi ảnh được update → Cập nhật visibility
         foreach (var trackedImage in eventArgs.updated)
         {
-            if (trackedImage.trackingState == TrackingState.Tracking)
+            string imageName = trackedImage.referenceImage.name;
+
+            if (spawnedObjects.TryGetValue(imageName, out GameObject obj))
             {
-                // Nếu đang đợi tracking tốt, check quality
-                if (isWaitingForGoodTracking && !isProcessingOCR)
-                {
-                    // ARFoundation không expose tracking quality trực tiếp
-                    // Nhưng ta có thể dùng trackingState == Tracking như indicator
-                    Debug.Log($"Image tracking: {trackedImage.referenceImage.name}");
-                }
+                bool isTracking = trackedImage.trackingState == TrackingState.Tracking;
+                obj.SetActive(isTracking);
             }
         }
-    }
-    
-    IEnumerator WaitForGoodTrackingAndCapture(ARTrackedImage trackedImage)
-    {
-        Debug.Log("Waiting for stable tracking...");
-        
-        // Đợi một chút để tracking ổn định
-        yield return new WaitForSeconds(minTrackingQualityTime);
-        
-        // Check xem ảnh vẫn đang được track không
-        if (trackedImage != null && trackedImage.trackingState == TrackingState.Tracking)
+
+        // Khi mất tracking hoàn toàn → Ẩn object
+        foreach (var trackedImage in eventArgs.removed)
         {
-            Debug.Log("Good tracking detected! Capturing now...");
-            isWaitingForGoodTracking = false;
-            isProcessingOCR = true;
-            
-            yield return new WaitForEndOfFrame();
-            
-            // Capture screenshot
-            Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
-            
-            if (screenshot != null)
+            string imageName = trackedImage.referenceImage.name;
+            Debug.Log($"[AR] Image lost: {imageName}");
+
+            if (spawnedObjects.TryGetValue(imageName, out GameObject obj))
             {
-                Debug.Log($"Screenshot captured: {screenshot.width}x{screenshot.height}");
-                
-                // Gọi OCRManager để xử lý
-                if (OCRManager.Instance != null)
-                {
-                    OCRManager.Instance.ProcessImage(screenshot);
-                }
-                else
-                {
-                    Debug.LogError("OCRManager.Instance is null!");
-                }
-                
-                // Giải phóng memory
-                Destroy(screenshot);
+                obj.SetActive(false);
             }
-            else
-            {
-                Debug.LogError("Failed to capture screenshot!");
-            }
-            
-            // Reset flag sau 5 giây (cho phép scan lại)
-            yield return new WaitForSeconds(5f);
-            isProcessingOCR = false;
-        }
-        else
-        {
-            Debug.LogWarning("Tracking lost before capture!");
-            isWaitingForGoodTracking = false;
         }
     }
 }
