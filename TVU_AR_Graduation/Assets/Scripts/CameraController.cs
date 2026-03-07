@@ -8,12 +8,16 @@ using System.IO;
 public class CameraController : MonoBehaviour
 {
     [Header("Recording Settings")]
-    [SerializeField] private string photoSavePath = "DCIM/TVU_AR";
-    [SerializeField] private string videoSavePath = "DCIM/TVU_AR";
+    #pragma warning disable 0414 // Suppress "assigned but never used" warning (used in Android build)
+    [SerializeField] private int videoWidth = 1920;
+    [SerializeField] private int videoHeight = 1080;
+    [SerializeField] private int videoFPS = 30;
+    #pragma warning restore 0414
     
     private bool isRecording = false;
     private bool flashEnabled = false;
     private Camera arCamera;
+    private float recordingStartTime;
     
     void Awake()
     {
@@ -27,21 +31,14 @@ public class CameraController : MonoBehaviour
     {
         #if UNITY_ANDROID && !UNITY_EDITOR
         // Android: Lưu vào DCIM
-        string photoPath = Path.Combine(Application.persistentDataPath, photoSavePath);
-        string videoPath = Path.Combine(Application.persistentDataPath, videoSavePath);
+        string photoPath = Path.Combine(Application.persistentDataPath, "DCIM/TVU_AR");
         
         if (!Directory.Exists(photoPath))
         {
             Directory.CreateDirectory(photoPath);
         }
         
-        if (!Directory.Exists(videoPath))
-        {
-            Directory.CreateDirectory(videoPath);
-        }
-        
         Debug.Log($"[Camera] Photo path: {photoPath}");
-        Debug.Log($"[Camera] Video path: {videoPath}");
         #endif
     }
     
@@ -64,7 +61,7 @@ public class CameraController : MonoBehaviour
         string filename = $"TVU_AR_{timestamp}.jpg";
         
         #if UNITY_ANDROID && !UNITY_EDITOR
-        string fullPath = Path.Combine(Application.persistentDataPath, photoSavePath, filename);
+        string fullPath = Path.Combine(Application.persistentDataPath, "DCIM/TVU_AR", filename);
         byte[] bytes = screenshot.EncodeToJPG(90);
         File.WriteAllBytes(fullPath, bytes);
         
@@ -108,15 +105,27 @@ public class CameraController : MonoBehaviour
         }
         
         isRecording = true;
+        recordingStartTime = Time.time;
         Debug.Log("[Camera] Start recording video...");
         
-        // TODO: Implement video recording
-        // Unity không có built-in video recording, cần dùng plugin như:
-        // - NatCorder (paid)
-        // - Unity Recorder (free, nhưng không support mobile tốt)
-        // - Custom implementation với MediaRecorder (Android native)
-        
-        ShowToast("Bắt đầu quay video");
+        #if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            using (AndroidJavaClass plugin = new AndroidJavaClass("com.tvu.argraduation.VideoRecorderPlugin"))
+            {
+                plugin.CallStatic("StartRecording", videoWidth, videoHeight, videoFPS);
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[Camera] Failed to start recording: {e.Message}");
+            isRecording = false;
+            ShowToast($"Lỗi: {e.Message}");
+        }
+        #else
+        Debug.LogWarning("[Camera] Video recording only works on Android device");
+        ShowToast("Video recording chỉ hoạt động trên Android");
+        #endif
     }
     
     void StopRecording()
@@ -128,11 +137,43 @@ public class CameraController : MonoBehaviour
         }
         
         isRecording = false;
-        Debug.Log("[Camera] Stop recording video...");
+        float duration = Time.time - recordingStartTime;
+        Debug.Log($"[Camera] Stop recording video (duration: {duration:F1}s)...");
         
-        // TODO: Stop video recording và lưu file
-        
-        ShowToast("Đã dừng quay video");
+        #if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            using (AndroidJavaClass plugin = new AndroidJavaClass("com.tvu.argraduation.VideoRecorderPlugin"))
+            {
+                plugin.CallStatic("StopRecording");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[Camera] Failed to stop recording: {e.Message}");
+            ShowToast($"Lỗi: {e.Message}");
+        }
+        #endif
+    }
+    
+    // Callbacks từ Android plugin
+    void OnRecordingStarted(string filePath)
+    {
+        Debug.Log($"[Camera] Recording started: {filePath}");
+        ShowToast("Bắt đầu quay video");
+    }
+    
+    void OnRecordingStopped(string filePath)
+    {
+        Debug.Log($"[Camera] Recording stopped: {filePath}");
+        ShowToast($"Đã lưu video");
+    }
+    
+    void OnRecordingError(string error)
+    {
+        Debug.LogError($"[Camera] Recording error: {error}");
+        isRecording = false;
+        ShowToast($"Lỗi: {error}");
     }
     
     public void ToggleFlash(string state)

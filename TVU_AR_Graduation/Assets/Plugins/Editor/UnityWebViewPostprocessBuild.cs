@@ -350,6 +350,10 @@ internal class AndroidManifest : AndroidXmlDocument {
     internal bool SetExported(bool enabled) {
         bool changed = false;
         var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity == null) {
+            Debug.LogWarning("unitywebview: Unable to find Unity activity in manifest. Skipping SetExported.");
+            return false;
+        }
         if (activity.GetAttribute("exported", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
             activity.SetAttribute("exported", AndroidXmlNamespace, (enabled) ? "true" : "false");
             changed = true;
@@ -360,6 +364,10 @@ internal class AndroidManifest : AndroidXmlDocument {
     internal bool SetWindowSoftInputMode(string mode) {
         bool changed = false;
         var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity == null) {
+            Debug.LogWarning("unitywebview: Unable to find Unity activity in manifest. Skipping SetWindowSoftInputMode.");
+            return false;
+        }
         if (activity.GetAttribute("windowSoftInputMode", AndroidXmlNamespace) != mode) {
             activity.SetAttribute("windowSoftInputMode", AndroidXmlNamespace, mode);
             changed = true;
@@ -370,6 +378,10 @@ internal class AndroidManifest : AndroidXmlDocument {
     internal bool SetHardwareAccelerated(bool enabled) {
         bool changed = false;
         var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity == null) {
+            Debug.LogWarning("unitywebview: Unable to find Unity activity in manifest. Skipping SetHardwareAccelerated.");
+            return false;
+        }
         if (activity.GetAttribute("hardwareAccelerated", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
             activity.SetAttribute("hardwareAccelerated", AndroidXmlNamespace, (enabled) ? "true" : "false");
             changed = true;

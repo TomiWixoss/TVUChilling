@@ -22,18 +22,20 @@ public class ARImageTracker : MonoBehaviour
 
     void OnEnable()
     {
-        trackedImageManager.trackedImagesChanged += OnTrackedImagesChanged;
+        // AR Foundation 6.0: Subscribe to trackablesChanged event
+        trackedImageManager.trackablesChanged.AddListener(OnTrackedImagesChanged);
     }
 
     void OnDisable()
     {
-        trackedImageManager.trackedImagesChanged -= OnTrackedImagesChanged;
+        // AR Foundation 6.0: Unsubscribe from trackablesChanged event
+        trackedImageManager.trackablesChanged.RemoveListener(OnTrackedImagesChanged);
     }
 
-    void OnTrackedImagesChanged(ARTrackedImagesChangedEventArgs eventArgs)
+    void OnTrackedImagesChanged(ARTrackablesChangedEventArgs<ARTrackedImage> eventArgs)
     {
         // Khi phát hiện ảnh mới → Spawn prefab
-        foreach (var trackedImage in eventArgs.added)
+        foreach (ARTrackedImage trackedImage in eventArgs.added)
         {
             string imageName = trackedImage.referenceImage.name;
             Debug.Log($"[AR] Image detected: {imageName}");
@@ -48,7 +50,7 @@ public class ARImageTracker : MonoBehaviour
         }
 
         // Khi ảnh được update → Cập nhật visibility
-        foreach (var trackedImage in eventArgs.updated)
+        foreach (ARTrackedImage trackedImage in eventArgs.updated)
         {
             string imageName = trackedImage.referenceImage.name;
 
@@ -60,8 +62,9 @@ public class ARImageTracker : MonoBehaviour
         }
 
         // Khi mất tracking hoàn toàn → Ẩn object
-        foreach (var trackedImage in eventArgs.removed)
+        foreach (var kvp in eventArgs.removed)
         {
+            ARTrackedImage trackedImage = kvp.Value;
             string imageName = trackedImage.referenceImage.name;
             Debug.Log($"[AR] Image lost: {imageName}");
 

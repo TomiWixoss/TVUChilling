@@ -10,8 +10,11 @@ public class WebViewManager : MonoBehaviour
     private WebViewObject webViewObject;
     
     [Header("Development Settings")]
-    [SerializeField] private string viteDevServerURL = "http://localhost:5173";
+    #pragma warning disable 0414 // Used in Editor only
     [SerializeField] private bool useDevServer = true; // Chỉ dùng trong Editor
+    #pragma warning restore 0414
+    
+    private const string VITE_DEV_SERVER_URL = "http://localhost:5173";
     
     [Header("Camera Controller")]
     [SerializeField] private CameraController cameraController;
@@ -21,7 +24,15 @@ public class WebViewManager : MonoBehaviour
         // Tự động tìm CameraController nếu chưa gán
         if (cameraController == null)
         {
-            cameraController = FindObjectOfType<CameraController>();
+            cameraController = FindFirstObjectByType<CameraController>();
+            
+            // Nếu vẫn không có, tạo mới
+            if (cameraController == null)
+            {
+                Debug.LogWarning("[WebView] CameraController not found in scene. Creating new one...");
+                GameObject cameraControllerObj = new GameObject("CameraController");
+                cameraController = cameraControllerObj.AddComponent<CameraController>();
+            }
         }
         
         StartCoroutine(InitWebView());
@@ -54,7 +65,7 @@ public class WebViewManager : MonoBehaviour
             {
                 Debug.Log($"[WebView] Loaded: {msg}");
                 
-                // Sau khi load xong, inject Unity bridge
+                // Inject Unity bridge
                 InjectUnityBridge();
             },
             enableWKWebView: true,
@@ -69,8 +80,8 @@ public class WebViewManager : MonoBehaviour
         Debug.Log($"[WebView] Loading URL: {url}");
         webViewObject.LoadURL(url);
         
-        // Ẩn WebView ban đầu, chỉ hiện khi cần
-        webViewObject.SetVisibility(false);
+        // Hiện WebView (để show camera controls)
+        webViewObject.SetVisibility(true);
         
         yield return null;
     }
@@ -81,7 +92,7 @@ public class WebViewManager : MonoBehaviour
         // Editor: Dùng Vite dev server
         if (useDevServer)
         {
-            return viteDevServerURL;
+            return VITE_DEV_SERVER_URL;
         }
         #endif
         
@@ -97,19 +108,14 @@ public class WebViewManager : MonoBehaviour
     
     void InjectUnityBridge()
     {
-        // Inject Unity bridge để JS có thể gọi Unity
-        string js = @"
-            window.Unity = {
-                call: function(method, data) {
-                    window.unity.call(JSON.stringify({method: method, data: data}));
-                }
-            };
-        ";
-        webViewObject.EvaluateJS(js);
+        // KHÔNG inject gì cả - để WebView tự nhiên
+        Debug.Log("[WebView] Skipping bridge injection");
     }
     
     void HandleMessageFromJS(string message)
     {
+        Debug.Log($"[WebView] Received: {message}");
+        
         try
         {
             // Parse JSON message từ React
@@ -129,15 +135,6 @@ public class WebViewManager : MonoBehaviour
                     OnFlashToggle(data.data);
                     break;
                     
-                case "onNameConfirmed":
-                    OnNameConfirmed(data.data);
-                    break;
-                    
-                case "onDialogClosed":
-                    Debug.Log("[WebView] Dialog closed");
-                    HideWebView(); // Ẩn WebView khi đóng dialog
-                    break;
-                    
                 default:
                     Debug.LogWarning($"[WebView] Unknown method: {data.method}");
                     break;
@@ -149,30 +146,7 @@ public class WebViewManager : MonoBehaviour
         }
     }
     
-    public void ShowOCRDialog(string studentName)
-    {
-        if (webViewObject == null)
-        {
-            Debug.LogError("[WebView] WebViewObject not initialized!");
-            return;
-        }
-        
-        // Hiện WebView
-        webViewObject.SetVisibility(true);
-        
-        // Gọi JS function để hiện dialog
-        string js = $"window.showOCRDialog('{EscapeJS(studentName)}')";
-        Debug.Log($"[WebView] Calling JS: {js}");
-        webViewObject.EvaluateJS(js);
-    }
-    
-    public void HideWebView()
-    {
-        if (webViewObject != null)
-        {
-            webViewObject.SetVisibility(false);
-        }
-    }
+
     
     void OnCapturePhoto()
     {
@@ -216,13 +190,7 @@ public class WebViewManager : MonoBehaviour
         }
     }
     
-    void OnNameConfirmed(string confirmedName)
-    {
-        Debug.Log($"[WebView] Name confirmed: {confirmedName}");
-        
-        // TODO: Lưu tên vào database hoặc xử lý tiếp
-        // Ví dụ: Hiện 3D model với tên này
-    }
+
     
     string EscapeJS(string text)
     {
