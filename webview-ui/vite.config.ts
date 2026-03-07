@@ -13,7 +13,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../Assets/StreamingAssets/webview', // Build vào Unity
+    outDir: '../TVU_AR_Graduation/Assets/StreamingAssets/webview', // Build vào Unity
     emptyOutDir: true,
     assetsDir: 'assets',
   },
