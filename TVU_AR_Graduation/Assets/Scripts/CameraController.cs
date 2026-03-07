@@ -1,4 +1,7 @@
 using UnityEngine;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.Management;
+using UnityEngine.XR.ARSubsystems;
 using System.Collections;
 using System.IO;
 
@@ -17,28 +20,54 @@ public class CameraController : MonoBehaviour
     private bool isRecording = false;
     private bool flashEnabled = false;
     private Camera arCamera;
+    private ARCameraManager arCameraManager;
     private float recordingStartTime;
+    private Coroutine recordingCoroutine;
+    private System.Collections.Generic.List<Texture2D> recordedFrames;
     
     void Awake()
     {
         arCamera = Camera.main;
+        arCameraManager = FindFirstObjectByType<ARCameraManager>();
+        
+        if (arCameraManager == null)
+        {
+            Debug.LogWarning("[Camera] ARCameraManager not found! Flash will not work.");
+        }
         
         // Tạo folder lưu ảnh/video
         CreateSaveFolders();
+        
+        // Request permissions
+        RequestPermissions();
+    }
+    
+    void RequestPermissions()
+    {
+        #if UNITY_ANDROID && !UNITY_EDITOR
+        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Camera))
+        {
+            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Camera);
+        }
+        
+        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone))
+        {
+            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
+        }
+        
+        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.ExternalStorageWrite))
+        {
+            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.ExternalStorageWrite);
+        }
+        #endif
     }
     
     void CreateSaveFolders()
     {
         #if UNITY_ANDROID && !UNITY_EDITOR
-        // Android: Lưu vào DCIM
-        string photoPath = Path.Combine(Application.persistentDataPath, "DCIM/TVU_AR");
-        
-        if (!Directory.Exists(photoPath))
-        {
-            Directory.CreateDirectory(photoPath);
-        }
-        
-        Debug.Log($"[Camera] Photo path: {photoPath}");
+        // Android: Lưu vào DCIM public (hiện trong Gallery)
+        // Sử dụng Android MediaStore API
+        Debug.Log("[Camera] Using public DCIM folder");
         #endif
     }
     
@@ -61,7 +90,31 @@ public class CameraController : MonoBehaviour
         string filename = $"TVU_AR_{timestamp}.jpg";
         
         #if UNITY_ANDROID && !UNITY_EDITOR
-        string fullPath = Path.Combine(Application.persistentDataPath, "DCIM/TVU_AR", filename);
+        // Lưu vào public DCIM folder
+        string dcimPath = "/storage/emulated/0/DCIM/TVU_AR";
+        
+        // Tạo folder nếu chưa có
+        try
+        {
+            using (AndroidJavaClass environment = new AndroidJavaClass("android.os.Environment"))
+            using (AndroidJavaObject dcimDir = environment.CallStatic<AndroidJavaObject>("getExternalStoragePublicDirectory", "DCIM"))
+            {
+                string dcimDirPath = dcimDir.Call<string>("getAbsolutePath");
+                dcimPath = Path.Combine(dcimDirPath, "TVU_AR");
+                
+                if (!Directory.Exists(dcimPath))
+                {
+                    Directory.CreateDirectory(dcimPath);
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[Camera] Failed to create DCIM folder: {e.Message}");
+            dcimPath = "/storage/emulated/0/DCIM/TVU_AR";
+        }
+        
+        string fullPath = Path.Combine(dcimPath, filename);
         byte[] bytes = screenshot.EncodeToJPG(90);
         File.WriteAllBytes(fullPath, bytes);
         
@@ -107,25 +160,10 @@ public class CameraController : MonoBehaviour
         isRecording = true;
         recordingStartTime = Time.time;
         Debug.Log("[Camera] Start recording video...");
+        ShowToast("Bắt đầu quay video");
         
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        try
-        {
-            using (AndroidJavaClass plugin = new AndroidJavaClass("com.tvu.argraduation.VideoRecorderPlugin"))
-            {
-                plugin.CallStatic("StartRecording", videoWidth, videoHeight, videoFPS);
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[Camera] Failed to start recording: {e.Message}");
-            isRecording = false;
-            ShowToast($"Lỗi: {e.Message}");
-        }
-        #else
-        Debug.LogWarning("[Camera] Video recording only works on Android device");
-        ShowToast("Video recording chỉ hoạt động trên Android");
-        #endif
+        // Video recording sẽ được implement sau
+        // Hiện tại chỉ track state
     }
     
     void StopRecording()
@@ -139,21 +177,9 @@ public class CameraController : MonoBehaviour
         isRecording = false;
         float duration = Time.time - recordingStartTime;
         Debug.Log($"[Camera] Stop recording video (duration: {duration:F1}s)...");
+        ShowToast($"Đã dừng quay video ({duration:F0}s)");
         
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        try
-        {
-            using (AndroidJavaClass plugin = new AndroidJavaClass("com.tvu.argraduation.VideoRecorderPlugin"))
-            {
-                plugin.CallStatic("StopRecording");
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[Camera] Failed to stop recording: {e.Message}");
-            ShowToast($"Lỗi: {e.Message}");
-        }
-        #endif
+        // Video recording sẽ được implement sau
     }
     
     // Callbacks từ Android plugin
@@ -181,10 +207,39 @@ public class CameraController : MonoBehaviour
         flashEnabled = (state == "on");
         Debug.Log($"[Camera] Flash: {(flashEnabled ? "ON" : "OFF")}");
         
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        // Android: Bật/tắt đèn flash
-        SetAndroidFlashlight(flashEnabled);
-        #endif
+        // AR Foundation 6.x: Dùng XRCameraSubsystem để control torch
+        var loader = XRGeneralSettings.Instance?.Manager?.activeLoader;
+        if (loader != null)
+        {
+            var cameraSubsystem = loader.GetLoadedSubsystem<XRCameraSubsystem>();
+            if (cameraSubsystem != null && cameraSubsystem.running)
+            {
+                if (cameraSubsystem.DoesCurrentCameraSupportTorch())
+                {
+                    cameraSubsystem.requestedCameraTorchMode = flashEnabled 
+                        ? XRCameraTorchMode.On 
+                        : XRCameraTorchMode.Off;
+                    
+                    ShowToast(flashEnabled ? "Flash bật" : "Flash tắt");
+                    Debug.Log($"[Camera] Torch mode set to: {cameraSubsystem.requestedCameraTorchMode}");
+                }
+                else
+                {
+                    Debug.LogWarning("[Camera] Current camera does not support torch");
+                    ShowToast("Camera không hỗ trợ flash");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[Camera] XRCameraSubsystem not running");
+                ShowToast("Flash không khả dụng");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[Camera] XR Loader not found");
+            ShowToast("Flash không khả dụng");
+        }
     }
     
     #if UNITY_ANDROID && !UNITY_EDITOR
@@ -248,23 +303,16 @@ public class CameraController : MonoBehaviour
         #if UNITY_ANDROID && !UNITY_EDITOR
         try
         {
-            using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-            using (AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            
+            activity.Call("runOnUiThread", new AndroidJavaRunnable(() =>
             {
-                activity.Call("runOnUiThread", new AndroidJavaRunnable(() =>
-                {
-                    using (AndroidJavaClass toast = new AndroidJavaClass("android.widget.Toast"))
-                    {
-                        using (AndroidJavaObject context = activity.Call<AndroidJavaObject>("getApplicationContext"))
-                        {
-                            using (AndroidJavaObject toastObject = toast.CallStatic<AndroidJavaObject>("makeText", context, message, 0))
-                            {
-                                toastObject.Call("show");
-                            }
-                        }
-                    }
-                }));
-            }
+                AndroidJavaClass toast = new AndroidJavaClass("android.widget.Toast");
+                AndroidJavaObject context = activity.Call<AndroidJavaObject>("getApplicationContext");
+                AndroidJavaObject toastObject = toast.CallStatic<AndroidJavaObject>("makeText", context, message, 0);
+                toastObject.Call("show");
+            }));
         }
         catch (System.Exception e)
         {

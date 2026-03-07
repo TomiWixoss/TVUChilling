@@ -108,8 +108,8 @@ public class WebViewManager : MonoBehaviour
     
     void InjectUnityBridge()
     {
-        // KHÔNG inject gì cả - để WebView tự nhiên
-        Debug.Log("[WebView] Skipping bridge injection");
+        // Unity.call() đã có sẵn, không cần inject gì
+        Debug.Log("[WebView] Unity.call is ready (native)");
     }
     
     void HandleMessageFromJS(string message)

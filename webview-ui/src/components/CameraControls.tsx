@@ -5,7 +5,7 @@ import { Video, Zap, ZapOff } from 'lucide-react'
 declare global {
   interface Window {
     Unity?: {
-      call: (method: string, data: string) => void
+      call: (message: string) => void
     }
   }
 }
@@ -45,18 +45,38 @@ export function CameraControls() {
 
   const handleCapture = () => {
     console.log('📸 Capture photo clicked')
+    if (window.Unity && window.Unity.call) {
+      const message = JSON.stringify({ method: 'onCapturePhoto', data: '' })
+      window.Unity.call(message)
+    }
   }
 
   const handleRecordToggle = () => {
     const newState = !isRecording
     setIsRecording(newState)
-    console.log(newState ? '🎥 Start recording clicked' : '⏹️ Stop recording clicked')
+    console.log(newState ? '🎥 Start recording' : '⏹️ Stop recording')
+    
+    if (window.Unity && window.Unity.call) {
+      const message = JSON.stringify({ 
+        method: 'onRecordToggle', 
+        data: newState ? 'start' : 'stop' 
+      })
+      window.Unity.call(message)
+    }
   }
 
   const handleFlashToggle = () => {
     const newState = !flashEnabled
     setFlashEnabled(newState)
-    console.log(newState ? '💡 Flash ON clicked' : '💡 Flash OFF clicked')
+    console.log(newState ? '💡 Flash ON' : '💡 Flash OFF')
+    
+    if (window.Unity && window.Unity.call) {
+      const message = JSON.stringify({ 
+        method: 'onFlashToggle', 
+        data: newState ? 'on' : 'off' 
+      })
+      window.Unity.call(message)
+    }
   }
 
   return (
