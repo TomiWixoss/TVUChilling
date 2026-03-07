@@ -19,7 +19,12 @@ public class ARImageTracker : MonoBehaviour
 
     private ARTrackedImageManager trackedImageManager;
     private Dictionary<string, GameObject> spawnedObjects = new Dictionary<string, GameObject>();
+    private Dictionary<string, float> trackingStartTime = new Dictionary<string, float>();
     private bool isProcessingOCR = false;
+    
+    [Header("OCR Settings")]
+    [SerializeField] private float minTrackingDuration = 1.5f; // Chờ 1.5s tracking ổn định
+    [SerializeField] private float maxWaitTime = 4f; // Tối đa 4s
 
     void Awake()
     {
@@ -44,7 +49,7 @@ public class ARImageTracker : MonoBehaviour
 
     void OnTrackedImagesChanged(ARTrackedImagesChangedEventArgs eventArgs)
     {
-        // Khi phát hiện ảnh mới → Spawn prefab + Trigger OCR
+        // Khi phát hiện ảnh mới → Spawn prefab + Bắt đầu monitor tracking quality
         foreach (var trackedImage in eventArgs.added)
         {
             string imageName = trackedImage.referenceImage.name;
@@ -58,10 +63,11 @@ public class ARImageTracker : MonoBehaviour
                 Debug.Log($"[AR] Spawned object for: {imageName}");
             }
 
-            // Trigger OCR + WebView dialog
-            if (!isProcessingOCR)
+            // Bắt đầu monitor tracking quality
+            if (!isProcessingOCR && !trackingStartTime.ContainsKey(imageName))
             {
-                StartCoroutine(ProcessOCR());
+                trackingStartTime[imageName] = Time.time;
+                StartCoroutine(MonitorTrackingQuality(trackedImage));
             }
         }
 
@@ -77,7 +83,7 @@ public class ARImageTracker : MonoBehaviour
             }
         }
 
-        // Khi mất tracking hoàn toàn → Ẩn object
+        // Khi mất tracking hoàn toàn → Ẩn object + Reset timer
         foreach (var trackedImage in eventArgs.removed)
         {
             string imageName = trackedImage.referenceImage.name;
@@ -87,6 +93,67 @@ public class ARImageTracker : MonoBehaviour
             {
                 obj.SetActive(false);
             }
+            
+            trackingStartTime.Remove(imageName);
+        }
+    }
+    
+    IEnumerator MonitorTrackingQuality(ARTrackedImage trackedImage)
+    {
+        string imageName = trackedImage.referenceImage.name;
+        float startTime = Time.time;
+        float stableTrackingStart = 0f;
+        bool hasStableTracking = false;
+        
+        Debug.Log($"[AR] Monitoring tracking quality for: {imageName}");
+        
+        while (Time.time - startTime < maxWaitTime)
+        {
+            // Check tracking state
+            if (trackedImage.trackingState == TrackingState.Tracking)
+            {
+                // Bắt đầu đếm thời gian tracking ổn định
+                if (!hasStableTracking)
+                {
+                    stableTrackingStart = Time.time;
+                    hasStableTracking = true;
+                    Debug.Log($"[AR] Stable tracking started for: {imageName}");
+                }
+                
+                // Nếu đã tracking ổn định đủ lâu → Chụp ngay
+                float stableDuration = Time.time - stableTrackingStart;
+                if (stableDuration >= minTrackingDuration)
+                {
+                    Debug.Log($"[AR] Quality good! Stable for {stableDuration:F2}s. Capturing...");
+                    trackingStartTime.Remove(imageName);
+                    StartCoroutine(ProcessOCR());
+                    yield break;
+                }
+            }
+            else
+            {
+                // Mất tracking → Reset timer
+                if (hasStableTracking)
+                {
+                    Debug.Log($"[AR] Lost tracking, resetting timer");
+                    hasStableTracking = false;
+                }
+            }
+            
+            yield return new WaitForSeconds(0.1f); // Check mỗi 100ms
+        }
+        
+        // Timeout: Nếu vẫn đang tracking thì chụp luôn, không thì bỏ qua
+        if (trackedImage.trackingState == TrackingState.Tracking)
+        {
+            Debug.Log($"[AR] Timeout reached but still tracking. Capturing anyway...");
+            trackingStartTime.Remove(imageName);
+            StartCoroutine(ProcessOCR());
+        }
+        else
+        {
+            Debug.LogWarning($"[AR] Timeout reached with poor tracking quality. Skipping OCR.");
+            trackingStartTime.Remove(imageName);
         }
     }
 
