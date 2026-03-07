@@ -100,45 +100,35 @@ public class ARImageTracker : MonoBehaviour
         // Chụp screenshot
         Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
         
-        // Gọi ML Kit OCR
-        string ocrResult = PerformOCR(screenshot);
+        // Gọi ML Kit OCR (async, kết quả sẽ về qua callback)
+        PerformOCR(screenshot);
         
         // Giải phóng memory
         Destroy(screenshot);
         
-        Debug.Log($"[AR] OCR Result: {ocrResult}");
+        Debug.Log("[AR] OCR processing started...");
         
-        // Gọi WebView để hiện dialog
-        if (webViewManager != null)
-        {
-            webViewManager.ShowOCRDialog(ocrResult);
-        }
-        else
-        {
-            Debug.LogError("[AR] WebViewManager not found!");
-        }
-        
-        // Reset flag sau 3 giây (tránh spam)
-        yield return new WaitForSeconds(3f);
+        // Reset flag sau 5 giây (tránh spam)
+        yield return new WaitForSeconds(5f);
         isProcessingOCR = false;
     }
     
-    string PerformOCR(Texture2D image)
+    void PerformOCR(Texture2D image)
     {
         // Convert Texture2D to byte array
         byte[] imageBytes = image.EncodeToJPG();
         
         #if UNITY_ANDROID && !UNITY_EDITOR
-        // Gọi ML Kit native Android
-        return RecognizeTextNative(imageBytes);
+        // Gọi ML Kit native Android (async)
+        RecognizeTextNative(imageBytes);
         #else
-        // Editor mode: Trả về tên giả
-        return "NGUYỄN VĂN A";
+        // Editor mode: Log warning
+        Debug.LogWarning("[AR] OCR only works on Android device. Build APK to test.");
         #endif
     }
     
     #if UNITY_ANDROID && !UNITY_EDITOR
-    string RecognizeTextNative(byte[] imageBytes)
+    void RecognizeTextNative(byte[] imageBytes)
     {
         try
         {
@@ -148,37 +138,79 @@ public class ARImageTracker : MonoBehaviour
                 // Initialize ML Kit
                 mlKitClass.CallStatic("Initialize");
                 
-                // Gọi RecognizeText (async, kết quả sẽ về qua callback)
+                // Gọi RecognizeText (async, kết quả sẽ về qua callback OnTextRecognitionComplete)
                 mlKitClass.CallStatic("RecognizeText", imageBytes);
                 
-                // Tạm thời return placeholder (kết quả thật sẽ về qua OnTextRecognitionComplete)
-                return "Đang xử lý...";
+                Debug.Log("[AR] ML Kit processing...");
+                
+                // Hiện dialog "Đang xử lý..." để user biết
+                if (webViewManager != null)
+                {
+                    webViewManager.ShowOCRDialog("Đang xử lý OCR...");
+                }
             }
         }
         catch (System.Exception e)
         {
             Debug.LogError($"[AR] ML Kit error: {e.Message}");
-            return "NGUYỄN VĂN A"; // Fallback
+            Debug.LogError($"[AR] Stack trace: {e.StackTrace}");
+            
+            // Hiện dialog lỗi
+            if (webViewManager != null)
+            {
+                webViewManager.ShowOCRDialog($"LỖI: {e.Message}");
+            }
         }
     }
     
     // Callback từ ML Kit (được gọi từ Java)
     void OnTextRecognitionComplete(string result)
     {
-        Debug.Log($"[AR] ML Kit callback: {result}");
+        Debug.Log($"[AR] ML Kit callback received: {result}");
+        
+        if (string.IsNullOrEmpty(result))
+        {
+            Debug.LogError("[AR] OCR result is empty!");
+            if (webViewManager != null)
+            {
+                webViewManager.ShowOCRDialog("LỖI: Không nhận diện được chữ");
+            }
+            return;
+        }
         
         if (result.StartsWith("ERROR:"))
         {
             Debug.LogError($"[AR] OCR failed: {result}");
+            if (webViewManager != null)
+            {
+                webViewManager.ShowOCRDialog(result);
+            }
             return;
         }
         
         string studentName = ParseStudentName(result);
+        Debug.Log($"[AR] Parsed name: {studentName}");
         
-        // Gọi WebView để hiện dialog với tên thật
-        if (webViewManager != null)
+        if (string.IsNullOrEmpty(studentName))
         {
-            webViewManager.ShowOCRDialog(studentName);
+            Debug.LogWarning("[AR] Could not parse student name from OCR result");
+            // Hiện toàn bộ OCR text
+            if (webViewManager != null)
+            {
+                webViewManager.ShowOCRDialog(result);
+            }
+        }
+        else
+        {
+            // Gọi WebView để hiện dialog với tên đã parse
+            if (webViewManager != null)
+            {
+                webViewManager.ShowOCRDialog(studentName);
+            }
+            else
+            {
+                Debug.LogError("[AR] WebViewManager not found!");
+            }
         }
     }
     #endif

@@ -1,0 +1,20 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 34
+    
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 34
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    compileOnly files("$projectDir/../../../libs/unity-classes.jar")
+    implementation 'com.google.mlkit:text-recognition:16.0.0'
+}
