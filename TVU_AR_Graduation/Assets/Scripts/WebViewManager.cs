@@ -128,7 +128,7 @@ public class WebViewManager : MonoBehaviour
         }
     }
     
-    public void ShowOCRDialog(string ocrName)
+    public void ShowOCRDialog(string ocrName, string rawOCRText = "")
     {
         if (webViewObject == null)
         {
@@ -139,8 +139,17 @@ public class WebViewManager : MonoBehaviour
         // Hiện WebView
         webViewObject.SetVisibility(true);
         
-        // Gọi JS function để hiện dialog
-        string js = $"window.showOCRDialog('{EscapeJS(ocrName)}')";
+        // Gọi JS function để hiện dialog với raw OCR text
+        string js;
+        if (string.IsNullOrEmpty(rawOCRText))
+        {
+            js = $"window.showOCRDialog('{EscapeJS(ocrName)}')";
+        }
+        else
+        {
+            js = $"window.showOCRDialog('{EscapeJS(ocrName)}', '{EscapeJS(rawOCRText)}')";
+        }
+        
         Debug.Log($"[WebView] Calling JS: {js}");
         webViewObject.EvaluateJS(js);
     }

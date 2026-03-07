@@ -10,18 +10,22 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 export function OCRDialog() {
-  const { isOpen, studentName, closeDialog, setStudentName } = useOCRStore()
+  const { isOpen, studentName, rawOCRText, closeDialog, setStudentName } = useOCRStore()
+
+  const handleCopyRawText = () => {
+    navigator.clipboard.writeText(rawOCRText)
+    toast.success('Đã copy raw OCR text!')
+  }
 
   const handleConfirm = () => {
-    // Gửi tên về Unity
     if (window.Unity) {
       window.Unity.call('onNameConfirmed', studentName)
     }
     console.log('✅ Confirmed name:', studentName)
     
-    // Thông báo Unity đóng dialog
     if (window.Unity) {
       window.Unity.call('onDialogClosed', '')
     }
@@ -32,7 +36,6 @@ export function OCRDialog() {
   const handleCancel = () => {
     console.log('❌ Cancelled')
     
-    // Thông báo Unity đóng dialog
     if (window.Unity) {
       window.Unity.call('onDialogClosed', '')
     }
@@ -42,7 +45,7 @@ export function OCRDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={closeDialog}>
-      <DialogContent className="sm:max-w-[600px] bg-white dark:bg-neutral-950">
+      <DialogContent className="sm:max-w-[600px] bg-white dark:bg-neutral-950 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-3xl text-center">
             Hệ thống nhận diện bạn là:
@@ -63,6 +66,29 @@ export function OCRDialog() {
               onChange={(e) => setStudentName(e.target.value)}
               className="h-12 text-xl"
               placeholder="Nhập tên của bạn"
+            />
+          </div>
+
+          {/* Debug: Raw OCR Text */}
+          <div className="grid gap-2 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm text-muted-foreground">
+                Raw OCR Text (Debug)
+              </Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyRawText}
+                className="h-8"
+              >
+                Copy
+              </Button>
+            </div>
+            <textarea
+              readOnly
+              value={rawOCRText}
+              className="w-full h-32 p-3 text-sm font-mono bg-neutral-100 dark:bg-neutral-900 border rounded-md resize-none"
+              placeholder="Raw OCR text sẽ hiện ở đây..."
             />
           </div>
         </div>

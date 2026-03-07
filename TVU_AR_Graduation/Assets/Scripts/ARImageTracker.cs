@@ -164,8 +164,15 @@ public class ARImageTracker : MonoBehaviour
         // Chờ 1 frame để camera render
         yield return new WaitForEndOfFrame();
         
-        // Chụp screenshot
-        Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
+        // Chụp CHỈ camera AR (không bao gồm UI layer)
+        Texture2D screenshot = CaptureARCameraOnly();
+        
+        if (screenshot == null)
+        {
+            Debug.LogError("[AR] Failed to capture camera texture");
+            isProcessingOCR = false;
+            yield break;
+        }
         
         // Gọi ML Kit OCR (async, kết quả sẽ về qua callback)
         PerformOCR(screenshot);
@@ -178,6 +185,38 @@ public class ARImageTracker : MonoBehaviour
         // Reset flag sau 5 giây (tránh spam)
         yield return new WaitForSeconds(5f);
         isProcessingOCR = false;
+    }
+    
+    Texture2D CaptureARCameraOnly()
+    {
+        Camera arCamera = Camera.main;
+        if (arCamera == null)
+        {
+            Debug.LogError("[AR] Main camera not found!");
+            return null;
+        }
+        
+        // Tạo RenderTexture tạm
+        RenderTexture currentRT = RenderTexture.active;
+        RenderTexture renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        
+        // Render camera vào texture (chỉ camera layer, không có UI)
+        arCamera.targetTexture = renderTexture;
+        arCamera.Render();
+        
+        // Đọc pixels từ RenderTexture
+        RenderTexture.active = renderTexture;
+        Texture2D screenshot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        screenshot.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+        screenshot.Apply();
+        
+        // Cleanup
+        arCamera.targetTexture = null;
+        RenderTexture.active = currentRT;
+        Destroy(renderTexture);
+        
+        Debug.Log($"[AR] Captured AR camera only: {screenshot.width}x{screenshot.height}");
+        return screenshot;
     }
     
     void PerformOCR(Texture2D image)
@@ -213,7 +252,7 @@ public class ARImageTracker : MonoBehaviour
                 // Hiện dialog "Đang xử lý..." để user biết
                 if (webViewManager != null)
                 {
-                    webViewManager.ShowOCRDialog("Đang xử lý OCR...");
+                    webViewManager.ShowOCRDialog("Đang xử lý OCR...", "Đang chờ ML Kit...");
                 }
             }
         }
@@ -225,7 +264,7 @@ public class ARImageTracker : MonoBehaviour
             // Hiện dialog lỗi
             if (webViewManager != null)
             {
-                webViewManager.ShowOCRDialog($"LỖI: {e.Message}");
+                webViewManager.ShowOCRDialog($"LỖI: {e.Message}", $"Exception: {e.Message}\n{e.StackTrace}");
             }
         }
     }
@@ -240,7 +279,7 @@ public class ARImageTracker : MonoBehaviour
             Debug.LogError("[AR] OCR result is empty!");
             if (webViewManager != null)
             {
-                webViewManager.ShowOCRDialog("LỖI: Không nhận diện được chữ");
+                webViewManager.ShowOCRDialog("LỖI: Không nhận diện được chữ", "");
             }
             return;
         }
@@ -250,7 +289,7 @@ public class ARImageTracker : MonoBehaviour
             Debug.LogError($"[AR] OCR failed: {result}");
             if (webViewManager != null)
             {
-                webViewManager.ShowOCRDialog(result);
+                webViewManager.ShowOCRDialog(result, result);
             }
             return;
         }
@@ -258,26 +297,14 @@ public class ARImageTracker : MonoBehaviour
         string studentName = ParseStudentName(result);
         Debug.Log($"[AR] Parsed name: {studentName}");
         
-        if (string.IsNullOrEmpty(studentName))
+        // Gửi cả tên parsed VÀ raw OCR text để debug
+        if (webViewManager != null)
         {
-            Debug.LogWarning("[AR] Could not parse student name from OCR result");
-            // Hiện toàn bộ OCR text
-            if (webViewManager != null)
-            {
-                webViewManager.ShowOCRDialog(result);
-            }
+            webViewManager.ShowOCRDialog(studentName, result);
         }
         else
         {
-            // Gọi WebView để hiện dialog với tên đã parse
-            if (webViewManager != null)
-            {
-                webViewManager.ShowOCRDialog(studentName);
-            }
-            else
-            {
-                Debug.LogError("[AR] WebViewManager not found!");
-            }
+            Debug.LogError("[AR] WebViewManager not found!");
         }
     }
     #endif
