@@ -5,7 +5,6 @@ apply from: '../shared/common.gradle'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.google.mlkit:text-recognition:16.0.0'
     
 **DEPS**}
 

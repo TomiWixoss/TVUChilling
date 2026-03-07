@@ -7,7 +7,7 @@ declare global {
     Unity?: {
       call: (method: string, data: string) => void
     }
-    showOCRDialog?: (name: string, rawText?: string) => void
+    showOCRDialog?: (name: string) => void
   }
 }
 
@@ -16,9 +16,9 @@ export function useUnityBridge() {
 
   useEffect(() => {
     // Expose function cho Unity gọi
-    window.showOCRDialog = (name: string, rawText?: string) => {
-      console.log('📱 Unity called showOCRDialog:', { name, rawText })
-      openDialog(name, rawText)
+    window.showOCRDialog = (name: string) => {
+      console.log('📱 Unity called showOCRDialog:', name)
+      openDialog(name)
     }
 
     console.log('✅ Unity bridge initialized')
