@@ -12,21 +12,12 @@ public class ARImageTracker : MonoBehaviour
     [Header("Prefab Settings")]
     [SerializeField] private GameObject trackedPrefab;
 
-    [Header("WebView Integration")]
-    [SerializeField] private WebViewManager webViewManager;
-
     private ARTrackedImageManager trackedImageManager;
     private Dictionary<string, GameObject> spawnedObjects = new Dictionary<string, GameObject>();
 
     void Awake()
     {
         trackedImageManager = GetComponent<ARTrackedImageManager>();
-        
-        // Tự động tìm WebViewManager nếu chưa gán
-        if (webViewManager == null)
-        {
-            webViewManager = FindObjectOfType<WebViewManager>();
-        }
     }
 
     void OnEnable()
@@ -53,12 +44,6 @@ public class ARImageTracker : MonoBehaviour
                 obj.SetActive(true);
                 spawnedObjects[imageName] = obj;
                 Debug.Log($"[AR] Spawned object for: {imageName}");
-            }
-
-            // Hiện WebView dialog để nhập tên thủ công
-            if (webViewManager != null)
-            {
-                webViewManager.ShowOCRDialog("Nhập tên của bạn", "");
             }
         }
 

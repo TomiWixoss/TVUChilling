@@ -1,15 +1,11 @@
-import { OCRDialog } from '@/components/OCRDialog'
-import { useUnityBridge } from '@/hooks/useUnityBridge'
+import { CameraControls } from '@/components/CameraControls'
 import { Toaster } from '@/components/ui/sonner'
 
 export function App() {
-  // Initialize Unity bridge
-  useUnityBridge()
-
   return (
     <>
-      {/* OCR Dialog - Sẽ hiện khi Unity gọi window.showOCRDialog() */}
-      <OCRDialog />
+      {/* Camera controls - Hiện ở dưới cùng như app Camera */}
+      <CameraControls />
 
       {/* Toast notifications */}
       <Toaster />

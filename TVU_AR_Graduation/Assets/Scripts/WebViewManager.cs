@@ -13,8 +13,17 @@ public class WebViewManager : MonoBehaviour
     [SerializeField] private string viteDevServerURL = "http://localhost:5173";
     [SerializeField] private bool useDevServer = true; // Chỉ dùng trong Editor
     
+    [Header("Camera Controller")]
+    [SerializeField] private CameraController cameraController;
+    
     void Start()
     {
+        // Tự động tìm CameraController nếu chưa gán
+        if (cameraController == null)
+        {
+            cameraController = FindObjectOfType<CameraController>();
+        }
+        
         StartCoroutine(InitWebView());
     }
     
@@ -108,6 +117,18 @@ public class WebViewManager : MonoBehaviour
             
             switch (data.method)
             {
+                case "onCapturePhoto":
+                    OnCapturePhoto();
+                    break;
+                    
+                case "onRecordToggle":
+                    OnRecordToggle(data.data);
+                    break;
+                    
+                case "onFlashToggle":
+                    OnFlashToggle(data.data);
+                    break;
+                    
                 case "onNameConfirmed":
                     OnNameConfirmed(data.data);
                     break;
@@ -150,6 +171,48 @@ public class WebViewManager : MonoBehaviour
         if (webViewObject != null)
         {
             webViewObject.SetVisibility(false);
+        }
+    }
+    
+    void OnCapturePhoto()
+    {
+        Debug.Log("[WebView] Capture photo requested");
+        
+        if (cameraController != null)
+        {
+            cameraController.CapturePhoto();
+        }
+        else
+        {
+            Debug.LogError("[WebView] CameraController not found!");
+        }
+    }
+    
+    void OnRecordToggle(string state)
+    {
+        Debug.Log($"[WebView] Record toggle: {state}");
+        
+        if (cameraController != null)
+        {
+            cameraController.ToggleRecording(state);
+        }
+        else
+        {
+            Debug.LogError("[WebView] CameraController not found!");
+        }
+    }
+    
+    void OnFlashToggle(string state)
+    {
+        Debug.Log($"[WebView] Flash toggle: {state}");
+        
+        if (cameraController != null)
+        {
+            cameraController.ToggleFlash(state);
+        }
+        else
+        {
+            Debug.LogError("[WebView] CameraController not found!");
         }
     }
     
