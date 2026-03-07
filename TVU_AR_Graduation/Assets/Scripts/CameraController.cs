@@ -2,28 +2,36 @@ using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.Management;
 using UnityEngine.XR.ARSubsystems;
+using UnityEngine.Rendering;
+using UnityEditor.Recorder;
+using UnityEditor.Recorder.Encoder;
+using UnityEditor.Recorder.Input;
 using System.Collections;
 using System.IO;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 /// <summary>
-/// Camera Controller - Xử lý chụp ảnh, quay video, flash
+/// Camera Controller - Flash (Unity AR), Photo (AsyncGPU), Video (Unity Recorder)
 /// </summary>
 public class CameraController : MonoBehaviour
 {
     [Header("Recording Settings")]
-    #pragma warning disable 0414 // Suppress "assigned but never used" warning (used in Android build)
     [SerializeField] private int videoWidth = 1920;
     [SerializeField] private int videoHeight = 1080;
     [SerializeField] private int videoFPS = 30;
-    #pragma warning restore 0414
     
     private bool isRecording = false;
     private bool flashEnabled = false;
     private Camera arCamera;
     private ARCameraManager arCameraManager;
     private float recordingStartTime;
-    private Coroutine recordingCoroutine;
-    private System.Collections.Generic.List<Texture2D> recordedFrames;
+    
+    // Unity Recorder
+    private RecorderController recorderController;
+    private MovieRecorderSettings movieRecorderSettings;
     
     void Awake()
     {
@@ -32,11 +40,8 @@ public class CameraController : MonoBehaviour
         
         if (arCameraManager == null)
         {
-            Debug.LogWarning("[Camera] ARCameraManager not found! Flash will not work.");
+            Debug.LogWarning("[Camera] ARCameraManager not found!");
         }
-        
-        // Tạo folder lưu ảnh/video
-        CreateSaveFolders();
         
         // Request permissions
         RequestPermissions();
@@ -50,11 +55,6 @@ public class CameraController : MonoBehaviour
             UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Camera);
         }
         
-        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone))
-        {
-            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
-        }
-        
         if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.ExternalStorageWrite))
         {
             UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.ExternalStorageWrite);
@@ -62,79 +62,72 @@ public class CameraController : MonoBehaviour
         #endif
     }
     
-    void CreateSaveFolders()
-    {
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        // Android: Lưu vào DCIM public (hiện trong Gallery)
-        // Sử dụng Android MediaStore API
-        Debug.Log("[Camera] Using public DCIM folder");
-        #endif
-    }
-    
     public void CapturePhoto()
     {
-        Debug.Log("[Camera] Capturing photo...");
-        StartCoroutine(CapturePhotoCoroutine());
+        Debug.Log("[Camera] Capturing photo with AsyncGPUReadback...");
+        StartCoroutine(CapturePhotoAsync());
     }
     
-    IEnumerator CapturePhotoCoroutine()
+    IEnumerator CapturePhotoAsync()
     {
-        // Chờ end of frame để capture
+        // Wait for end of frame
         yield return new WaitForEndOfFrame();
         
         // Capture screenshot
         Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
         
-        // Lưu file
-        string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string filename = $"TVU_AR_{timestamp}.jpg";
-        
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        // Lưu vào public DCIM folder
-        string dcimPath = "/storage/emulated/0/DCIM/TVU_AR";
-        
-        // Tạo folder nếu chưa có
-        try
+        // Request async GPU readback (KHÔNG block main thread)
+        AsyncGPUReadback.Request(screenshot, 0, (request) =>
         {
-            using (AndroidJavaClass environment = new AndroidJavaClass("android.os.Environment"))
-            using (AndroidJavaObject dcimDir = environment.CallStatic<AndroidJavaObject>("getExternalStoragePublicDirectory", "DCIM"))
+            if (request.hasError)
             {
-                string dcimDirPath = dcimDir.Call<string>("getAbsolutePath");
-                dcimPath = Path.Combine(dcimDirPath, "TVU_AR");
-                
-                if (!Directory.Exists(dcimPath))
-                {
-                    Directory.CreateDirectory(dcimPath);
-                }
+                Debug.LogError("[Camera] AsyncGPUReadback error!");
+                Destroy(screenshot);
+                return;
             }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[Camera] Failed to create DCIM folder: {e.Message}");
-            dcimPath = "/storage/emulated/0/DCIM/TVU_AR";
-        }
-        
-        string fullPath = Path.Combine(dcimPath, filename);
-        byte[] bytes = screenshot.EncodeToJPG(90);
-        File.WriteAllBytes(fullPath, bytes);
-        
-        Debug.Log($"[Camera] Photo saved: {fullPath}");
-        
-        // Thông báo Android Media Scanner để ảnh hiện trong Gallery
-        RefreshAndroidGallery(fullPath);
-        #else
-        // Editor: Lưu vào Assets
-        string fullPath = Path.Combine(Application.dataPath, filename);
-        byte[] bytes = screenshot.EncodeToJPG(90);
-        File.WriteAllBytes(fullPath, bytes);
-        Debug.Log($"[Camera] Photo saved (Editor): {fullPath}");
-        #endif
-        
-        // Cleanup
-        Destroy(screenshot);
-        
-        // Hiện toast notification
-        ShowToast($"Đã lưu ảnh: {filename}");
+            
+            // Save ảnh trong background thread
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    string filename = $"TVU_AR_{timestamp}.jpg";
+                    
+                    #if UNITY_ANDROID && !UNITY_EDITOR
+                    string dcimPath = "/storage/emulated/0/DCIM/TVU_AR";
+                    if (!Directory.Exists(dcimPath))
+                    {
+                        Directory.CreateDirectory(dcimPath);
+                    }
+                    string fullPath = Path.Combine(dcimPath, filename);
+                    #else
+                    string fullPath = Path.Combine(Application.persistentDataPath, filename);
+                    #endif
+                    
+                    // Encode to JPEG
+                    byte[] bytes = screenshot.EncodeToJPG(90);
+                    File.WriteAllBytes(fullPath, bytes);
+                    
+                    // Callback to main thread
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                    {
+                        Debug.Log($"[Camera] Photo saved: {fullPath}");
+                        ShowToast("Đã lưu ảnh");
+                        Destroy(screenshot);
+                        
+                        #if UNITY_ANDROID && !UNITY_EDITOR
+                        RefreshAndroidGallery(fullPath);
+                        #endif
+                    });
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[Camera] Failed to save photo: {e.Message}");
+                    UnityMainThreadDispatcher.Instance().Enqueue(() => Destroy(screenshot));
+                }
+            });
+        });
     }
     
     public void ToggleRecording(string state)
@@ -159,11 +152,61 @@ public class CameraController : MonoBehaviour
         
         isRecording = true;
         recordingStartTime = Time.time;
-        Debug.Log("[Camera] Start recording video...");
-        ShowToast("Bắt đầu quay video");
         
-        // Video recording sẽ được implement sau
-        // Hiện tại chỉ track state
+        Debug.Log("[Camera] Start recording video with Unity Recorder...");
+        
+        // Setup Unity Recorder
+        var controllerSettings = ScriptableObject.CreateInstance<RecorderControllerSettings>();
+        recorderController = new RecorderController(controllerSettings);
+        
+        // Setup Movie Recorder
+        movieRecorderSettings = ScriptableObject.CreateInstance<MovieRecorderSettings>();
+        movieRecorderSettings.Enabled = true;
+        
+        // Output settings
+        string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string filename = $"TVU_AR_{timestamp}";
+        
+        #if UNITY_ANDROID && !UNITY_EDITOR
+        // Android: Lưu vào DCIM/TVU_AR
+        string dcimPath = "/storage/emulated/0/DCIM/TVU_AR";
+        if (!Directory.Exists(dcimPath))
+        {
+            Directory.CreateDirectory(dcimPath);
+        }
+        movieRecorderSettings.OutputFile = Path.Combine(dcimPath, filename);
+        #else
+        movieRecorderSettings.OutputFile = Path.Combine(Application.persistentDataPath, filename);
+        #endif
+        
+        // Video settings
+        movieRecorderSettings.ImageInputSettings = new GameViewInputSettings
+        {
+            OutputWidth = videoWidth,
+            OutputHeight = videoHeight
+        };
+        
+        movieRecorderSettings.EncoderSettings = new CoreEncoderSettings
+        {
+            Codec = CoreEncoderSettings.OutputCodec.MP4,
+            EncodingQuality = CoreEncoderSettings.VideoEncodingQuality.High
+        };
+        
+        movieRecorderSettings.FrameRate = videoFPS;
+        movieRecorderSettings.FrameRatePlayback = FrameRatePlayback.Constant;
+        movieRecorderSettings.CapFrameRate = true;
+        
+        // Add recorder to controller
+        controllerSettings.AddRecorderSettings(movieRecorderSettings);
+        controllerSettings.SetRecordModeToManual();
+        controllerSettings.FrameRate = videoFPS;
+        
+        // Prepare and start recording
+        recorderController.PrepareRecording();
+        recorderController.StartRecording();
+        
+        ShowToast("Bắt đầu quay video");
+        Debug.Log($"[Camera] Recording to: {movieRecorderSettings.OutputFile}");
     }
     
     void StopRecording()
@@ -177,29 +220,22 @@ public class CameraController : MonoBehaviour
         isRecording = false;
         float duration = Time.time - recordingStartTime;
         Debug.Log($"[Camera] Stop recording video (duration: {duration:F1}s)...");
-        ShowToast($"Đã dừng quay video ({duration:F0}s)");
         
-        // Video recording sẽ được implement sau
-    }
-    
-    // Callbacks từ Android plugin
-    void OnRecordingStarted(string filePath)
-    {
-        Debug.Log($"[Camera] Recording started: {filePath}");
-        ShowToast("Bắt đầu quay video");
-    }
-    
-    void OnRecordingStopped(string filePath)
-    {
-        Debug.Log($"[Camera] Recording stopped: {filePath}");
-        ShowToast($"Đã lưu video");
-    }
-    
-    void OnRecordingError(string error)
-    {
-        Debug.LogError($"[Camera] Recording error: {error}");
-        isRecording = false;
-        ShowToast($"Lỗi: {error}");
+        // Stop Unity Recorder
+        if (recorderController != null)
+        {
+            recorderController.StopRecording();
+            
+            string videoPath = movieRecorderSettings.OutputFile + ".mp4";
+            Debug.Log($"[Camera] Video saved: {videoPath}");
+            
+            #if UNITY_ANDROID && !UNITY_EDITOR
+            // Refresh Android Gallery
+            RefreshAndroidGallery(videoPath);
+            #endif
+            
+            ShowToast($"Đã lưu video ({duration:F0}s)");
+        }
     }
     
     public void ToggleFlash(string state)
@@ -207,13 +243,14 @@ public class CameraController : MonoBehaviour
         flashEnabled = (state == "on");
         Debug.Log($"[Camera] Flash: {(flashEnabled ? "ON" : "OFF")}");
         
-        // AR Foundation 6.x: Dùng XRCameraSubsystem để control torch
+        // Dùng Unity AR Foundation XRCameraSubsystem
         var loader = XRGeneralSettings.Instance?.Manager?.activeLoader;
         if (loader != null)
         {
             var cameraSubsystem = loader.GetLoadedSubsystem<XRCameraSubsystem>();
             if (cameraSubsystem != null && cameraSubsystem.running)
             {
+                // Check if torch is supported
                 if (cameraSubsystem.DoesCurrentCameraSupportTorch())
                 {
                     cameraSubsystem.requestedCameraTorchMode = flashEnabled 
@@ -225,7 +262,7 @@ public class CameraController : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("[Camera] Current camera does not support torch");
+                    Debug.LogWarning("[Camera] Camera does not support torch");
                     ShowToast("Camera không hỗ trợ flash");
                 }
             }
@@ -243,31 +280,6 @@ public class CameraController : MonoBehaviour
     }
     
     #if UNITY_ANDROID && !UNITY_EDITOR
-    void SetAndroidFlashlight(bool enabled)
-    {
-        try
-        {
-            using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-            using (AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
-            using (AndroidJavaObject context = activity.Call<AndroidJavaObject>("getApplicationContext"))
-            using (AndroidJavaObject cameraManager = context.Call<AndroidJavaObject>("getSystemService", "camera"))
-            {
-                // Get camera ID
-                string[] cameraIds = cameraManager.Call<string[]>("getCameraIdList");
-                if (cameraIds.Length > 0)
-                {
-                    string cameraId = cameraIds[0];
-                    cameraManager.Call("setTorchMode", cameraId, enabled);
-                    Debug.Log($"[Camera] Flashlight {(enabled ? "enabled" : "disabled")}");
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[Camera] Failed to toggle flashlight: {e.Message}");
-        }
-    }
-    
     void RefreshAndroidGallery(string filePath)
     {
         try
@@ -327,6 +339,12 @@ public class CameraController : MonoBehaviour
         if (flashEnabled)
         {
             ToggleFlash("off");
+        }
+        
+        // Stop recording nếu đang quay
+        if (isRecording && recorderController != null)
+        {
+            recorderController.StopRecording();
         }
     }
 }
