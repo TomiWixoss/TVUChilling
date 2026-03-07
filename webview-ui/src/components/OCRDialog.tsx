@@ -16,19 +16,27 @@ export function OCRDialog() {
 
   const handleConfirm = () => {
     // Gửi tên về Unity
-    if (window.unityInstance) {
-      window.unityInstance.SendMessage(
-        'WebViewManager',
-        'OnNameConfirmed',
-        studentName
-      )
+    if (window.Unity) {
+      window.Unity.call('onNameConfirmed', studentName)
     }
     console.log('✅ Confirmed name:', studentName)
+    
+    // Thông báo Unity đóng dialog
+    if (window.Unity) {
+      window.Unity.call('onDialogClosed', '')
+    }
+    
     closeDialog()
   }
 
   const handleCancel = () => {
     console.log('❌ Cancelled')
+    
+    // Thông báo Unity đóng dialog
+    if (window.Unity) {
+      window.Unity.call('onDialogClosed', '')
+    }
+    
     closeDialog()
   }
 

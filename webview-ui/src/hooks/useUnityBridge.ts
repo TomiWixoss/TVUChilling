@@ -4,8 +4,8 @@ import { useOCRStore } from '@/store/useOCRStore'
 // Extend Window interface để TypeScript không báo lỗi
 declare global {
   interface Window {
-    unityInstance?: {
-      SendMessage: (objectName: string, methodName: string, value: string) => void
+    Unity?: {
+      call: (method: string, data: string) => void
     }
     showOCRDialog?: (name: string) => void
   }

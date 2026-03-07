@@ -60,7 +60,8 @@ public class WebViewManager : MonoBehaviour
         Debug.Log($"[WebView] Loading URL: {url}");
         webViewObject.LoadURL(url);
         
-        webViewObject.SetVisibility(true);
+        // Ẩn WebView ban đầu, chỉ hiện khi cần
+        webViewObject.SetVisibility(false);
         
         yield return null;
     }
@@ -113,6 +114,7 @@ public class WebViewManager : MonoBehaviour
                     
                 case "onDialogClosed":
                     Debug.Log("[WebView] Dialog closed");
+                    HideWebView(); // Ẩn WebView khi đóng dialog
                     break;
                     
                 default:
@@ -134,10 +136,21 @@ public class WebViewManager : MonoBehaviour
             return;
         }
         
+        // Hiện WebView
+        webViewObject.SetVisibility(true);
+        
         // Gọi JS function để hiện dialog
         string js = $"window.showOCRDialog('{EscapeJS(ocrName)}')";
         Debug.Log($"[WebView] Calling JS: {js}");
         webViewObject.EvaluateJS(js);
+    }
+    
+    public void HideWebView()
+    {
+        if (webViewObject != null)
+        {
+            webViewObject.SetVisibility(false);
+        }
     }
     
     void OnNameConfirmed(string confirmedName)
