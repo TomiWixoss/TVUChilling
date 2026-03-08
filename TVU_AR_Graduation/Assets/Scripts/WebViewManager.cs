@@ -22,7 +22,7 @@ public class WebViewManager : MonoBehaviour
     
     [Header("AR Controllers")]
     [SerializeField] private ARTrackedImageManager imageTracker;
-    [SerializeField] private PlacementController placementController;
+    [SerializeField] private ARPlacementManager placementManager;
     
     void Start()
     {
@@ -46,14 +46,14 @@ public class WebViewManager : MonoBehaviour
             imageTracker = FindFirstObjectByType<ARTrackedImageManager>();
         }
         
-        if (placementController == null)
+        if (placementManager == null)
         {
-            placementController = FindFirstObjectByType<PlacementController>();
+            placementManager = FindFirstObjectByType<ARPlacementManager>();
         }
         
         // Disable all modes ban đầu
         if (imageTracker != null) imageTracker.enabled = false;
-        if (placementController != null) placementController.enabled = false;
+        if (placementManager != null) placementManager.DisablePlacement();
         
         StartCoroutine(InitWebView());
     }
@@ -155,20 +155,28 @@ public class WebViewManager : MonoBehaviour
                     OnFlashToggle(data.data);
                     break;
                     
-                case "onModeSelect":
-                    OnModeSelect(data.data);
+                case "onTrackingToggle":
+                    OnTrackingToggle(data.data);
                     break;
                     
-                case "onPrefabSelect":
-                    OnPrefabSelect(data.data);
+                case "onModelSelect":
+                    OnModelSelect(data.data);
                     break;
                     
-                case "onPlacementDelete":
-                    OnPlacementDelete();
+                case "onDeleteObject":
+                    OnDeleteObject();
                     break;
                     
-                case "onPlacementClear":
-                    OnPlacementClear();
+                case "onDuplicateObject":
+                    OnDuplicateObject();
+                    break;
+                    
+                case "onDeselectObject":
+                    OnDeselectObject();
+                    break;
+                    
+                case "onGalleryOpen":
+                    OnGalleryOpen();
                     break;
                     
                 default:
@@ -224,13 +232,92 @@ public class WebViewManager : MonoBehaviour
         }
     }
     
+    void OnTrackingToggle(string state)
+    {
+        Debug.Log($"[WebView] Tracking toggle: {state}");
+        
+        bool enabled = state == "on";
+        
+        if (imageTracker != null)
+        {
+            imageTracker.enabled = enabled;
+        }
+        
+        // Always keep placement enabled
+        if (placementManager != null)
+        {
+            placementManager.EnablePlacement();
+        }
+    }
+    
+    void OnModelSelect(string modelId)
+    {
+        Debug.Log($"[WebView] Model selected: {modelId}");
+        
+        if (placementManager != null)
+        {
+            // Convert model ID to index
+            int index = modelId switch
+            {
+                "none" => -1,
+                "cube" => 0,
+                "sphere" => 1,
+                "cylinder" => 2,
+                "cone" => 3,
+                _ => -1
+            };
+            
+            if (index >= 0)
+            {
+                placementManager.SetSpawnObjectIndex(index);
+            }
+        }
+    }
+    
+    void OnDeleteObject()
+    {
+        Debug.Log("[WebView] Delete object requested");
+        
+        if (placementManager != null)
+        {
+            placementManager.DeleteSelected();
+        }
+    }
+    
+    void OnDuplicateObject()
+    {
+        Debug.Log("[WebView] Duplicate object requested");
+        
+        if (placementManager != null)
+        {
+            placementManager.DuplicateSelected();
+        }
+    }
+    
+    void OnDeselectObject()
+    {
+        Debug.Log("[WebView] Deselect object requested");
+        
+        // Selection is handled by XRInteractionGroup automatically
+        // Just notify that user wants to deselect
+    }
+    
+    void OnGalleryOpen()
+    {
+        Debug.Log("[WebView] Gallery open requested");
+        
+        // TODO: Implement gallery opening
+        // On Android: Use Intent to open gallery
+        // On iOS: Use native photo picker
+    }
+    
     void OnModeSelect(string mode)
     {
         Debug.Log($"[WebView] Mode selected: {mode}");
         
         // Disable all modes
         if (imageTracker != null) imageTracker.enabled = false;
-        if (placementController != null) placementController.enabled = false;
+        if (placementManager != null) placementManager.DisablePlacement();
         
         // Enable selected mode
         switch (mode)
@@ -244,9 +331,9 @@ public class WebViewManager : MonoBehaviour
                 break;
                 
             case "placement":
-                if (placementController != null)
+                if (placementManager != null)
                 {
-                    placementController.enabled = true;
+                    placementManager.EnablePlacement();
                     Debug.Log("[WebView] Placement mode activated");
                 }
                 break;
@@ -261,9 +348,9 @@ public class WebViewManager : MonoBehaviour
     {
         Debug.Log($"[WebView] Prefab selected: {prefabIndex}");
         
-        if (placementController != null && int.TryParse(prefabIndex, out int index))
+        if (placementManager != null && int.TryParse(prefabIndex, out int index))
         {
-            placementController.SetCurrentPrefab(index);
+            placementManager.SetSpawnObjectIndex(index);
         }
     }
     
@@ -271,9 +358,9 @@ public class WebViewManager : MonoBehaviour
     {
         Debug.Log("[WebView] Delete placement requested");
         
-        if (placementController != null)
+        if (placementManager != null)
         {
-            placementController.DeleteSelected();
+            placementManager.DeleteSelected();
         }
     }
     
@@ -281,9 +368,20 @@ public class WebViewManager : MonoBehaviour
     {
         Debug.Log("[WebView] Clear all placements requested");
         
-        if (placementController != null)
+        if (placementManager != null)
         {
-            placementController.ClearAll();
+            placementManager.ClearAll();
+        }
+    }
+    
+    public void SendMessageToWebView(string method, string data)
+    {
+        if (webViewObject != null)
+        {
+            string json = $"{{\"method\":\"{method}\",\"data\":\"{EscapeJS(data)}\"}}";
+            string js = $"if(window.receiveUnityMessage){{window.receiveUnityMessage('{json}');}}";
+            webViewObject.EvaluateJS(js);
+            Debug.Log($"[WebView] Sent to JS: {json}");
         }
     }
     
