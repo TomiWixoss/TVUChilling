@@ -181,7 +181,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WebViewManager
   useDevServer: 1
-  cameraController: {fileID: 0}
+  cameraController: {fileID: 1605271443}
 --- !u!4 &469496457
 Transform:
   m_ObjectHideFlags: 0
@@ -192,6 +192,59 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0, y: 0, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &570229649
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 570229651}
+  - component: {fileID: 570229650}
+  m_Layer: 0
+  m_Name: PlacementController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &570229650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 570229649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 857da030922c540409359802ce5e04df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlacementController
+  raycastManager: {fileID: 1400584843}
+  planeManager: {fileID: 1400584842}
+  arCamera: {fileID: 1605271441}
+  placementPrefabs:
+  - {fileID: 4996136667190090016, guid: f0383b833bd08fd4ab8174c30e874406, type: 3}
+  - {fileID: 5993656943496482664, guid: 8bd8528522b9acc45ba1ec9b80d48baa, type: 3}
+  - {fileID: 8841706336534702424, guid: 1c4922880a1fe5f4fa16ac9723051d17, type: 3}
+  moveSpeed: 5
+  scaleSpeed: 0.01
+--- !u!4 &570229651
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 570229649}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.9128, y: -0, z: 3.30487}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -468,8 +521,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f8e9a1b2c3d4e5f6a7b8c9d0e1f2a3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ARImageTracker
-  phoenixPrefab: {fileID: 0}
-  dancerPrefab: {fileID: 0}
+  phoenixPrefab: {fileID: 6099179178461950985, guid: ea734f4a5340f9a438c5ac55cdcb1d6c, type: 3}
+  dancerPrefab: {fileID: 7693384076223132742, guid: 50b16b923f3bf9e458101d622da3851e, type: 3}
 --- !u!114 &1400584842
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -518,6 +571,7 @@ GameObject:
   - component: {fileID: 1605271438}
   - component: {fileID: 1605271437}
   - component: {fileID: 1605271442}
+  - component: {fileID: 1605271443}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -777,6 +831,18 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &1605271443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1605271435}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55a8acac3fac8dc42a74f013985378da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraController
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -785,3 +851,4 @@ SceneRoots:
   - {fileID: 1400584839}
   - {fileID: 758375610}
   - {fileID: 469496457}
+  - {fileID: 570229651}
