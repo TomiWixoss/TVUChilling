@@ -7,24 +7,14 @@ using System.Collections;
 using System.IO;
 
 /// <summary>
-/// Camera Controller - Flash (Unity AR), Photo (AsyncGPU), Video (AsyncGPU + MediaCodec)
+/// Camera Controller - Flash (Unity AR), Photo (AsyncGPU), Video (Native C++)
 /// </summary>
 public class CameraController : MonoBehaviour
 {
-    [Header("Recording Settings")]
-    [SerializeField] private int videoWidth = 1920;
-    [SerializeField] private int videoHeight = 1080;
-    [SerializeField] private int videoFPS = 30;
-    
-    private bool isRecording = false;
     private bool flashEnabled = false;
     private Camera arCamera;
     private ARCameraManager arCameraManager;
-    private float recordingStartTime;
-    
-    // Video recording với AsyncGPUReadback
-    private RenderTexture recordingRenderTexture;
-    private Coroutine recordingCoroutine;
+    private NativeVideoRecorder videoRecorder;
     
     void Awake()
     {
@@ -35,6 +25,9 @@ public class CameraController : MonoBehaviour
         {
             Debug.LogWarning("[Camera] ARCameraManager not found!");
         }
+        
+        // Setup native video recorder
+        videoRecorder = gameObject.AddComponent<NativeVideoRecorder>();
         
         // Request permissions
         RequestPermissions();
@@ -127,141 +120,21 @@ public class CameraController : MonoBehaviour
     {
         if (state == "start")
         {
-            StartRecording();
+            bool success = videoRecorder.StartRecording();
+            if (success)
+            {
+                ShowToast("Bắt đầu quay video");
+            }
+            else
+            {
+                ShowToast("Lỗi khởi động video");
+            }
         }
         else
         {
-            StopRecording();
+            videoRecorder.StopRecording();
+            ShowToast("Đã lưu video");
         }
-    }
-    
-    void StartRecording()
-    {
-        if (isRecording)
-        {
-            Debug.LogWarning("[Camera] Already recording!");
-            return;
-        }
-        
-        isRecording = true;
-        recordingStartTime = Time.time;
-        
-        Debug.Log("[Camera] Start recording video with AsyncGPUReadback + MediaCodec...");
-        
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        // Start Android MediaCodec encoder
-        using (AndroidJavaClass pluginClass = new AndroidJavaClass("com.tvu.argraduation.VideoRecorderPlugin"))
-        {
-            pluginClass.CallStatic("StartRecording", videoWidth, videoHeight, videoFPS);
-        }
-        
-        // Setup RenderTexture để capture frames
-        recordingRenderTexture = new RenderTexture(videoWidth, videoHeight, 24, RenderTextureFormat.ARGB32);
-        recordingRenderTexture.Create();
-        
-        // Start coroutine để capture frames
-        recordingCoroutine = StartCoroutine(CaptureVideoFrames());
-        
-        ShowToast("Bắt đầu quay video");
-        Debug.Log($"[Camera] Recording started ({videoWidth}x{videoHeight} @ {videoFPS}fps)");
-        #else
-        Debug.LogWarning("[Camera] Video recording only works on Android!");
-        isRecording = false;
-        #endif
-    }
-    
-    IEnumerator CaptureVideoFrames()
-    {
-        float frameInterval = 1f / videoFPS;
-        float nextFrameTime = Time.time;
-        
-        while (isRecording)
-        {
-            // Wait until next frame time
-            if (Time.time >= nextFrameTime)
-            {
-                nextFrameTime += frameInterval;
-                
-                // Render camera to RenderTexture
-                RenderTexture currentRT = RenderTexture.active;
-                RenderTexture.active = recordingRenderTexture;
-                
-                arCamera.targetTexture = recordingRenderTexture;
-                arCamera.Render();
-                arCamera.targetTexture = null;
-                
-                // AsyncGPUReadback (KHÔNG block main thread)
-                AsyncGPUReadback.Request(recordingRenderTexture, 0, TextureFormat.RGB24, (request) =>
-                {
-                    if (request.hasError)
-                    {
-                        Debug.LogError("[Camera] AsyncGPUReadback error!");
-                        return;
-                    }
-                    
-                    if (!isRecording) return;
-                    
-                    // Gửi frame data xuống Android plugin
-                    #if UNITY_ANDROID && !UNITY_EDITOR
-                    try
-                    {
-                        byte[] frameData = request.GetData<byte>().ToArray();
-                        
-                        using (AndroidJavaClass pluginClass = new AndroidJavaClass("com.tvu.argraduation.VideoRecorderPlugin"))
-                        {
-                            pluginClass.CallStatic("EncodeFrame", frameData, videoWidth, videoHeight);
-                        }
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogError($"[Camera] Failed to encode frame: {e.Message}");
-                    }
-                    #endif
-                });
-                
-                RenderTexture.active = currentRT;
-            }
-            
-            yield return null;
-        }
-    }
-    
-    void StopRecording()
-    {
-        if (!isRecording)
-        {
-            Debug.LogWarning("[Camera] Not recording!");
-            return;
-        }
-        
-        isRecording = false;
-        float duration = Time.time - recordingStartTime;
-        Debug.Log($"[Camera] Stop recording video (duration: {duration:F1}s)...");
-        
-        // Stop coroutine
-        if (recordingCoroutine != null)
-        {
-            StopCoroutine(recordingCoroutine);
-            recordingCoroutine = null;
-        }
-        
-        // Cleanup RenderTexture
-        if (recordingRenderTexture != null)
-        {
-            recordingRenderTexture.Release();
-            Destroy(recordingRenderTexture);
-            recordingRenderTexture = null;
-        }
-        
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        // Stop Android MediaCodec encoder
-        using (AndroidJavaClass pluginClass = new AndroidJavaClass("com.tvu.argraduation.VideoRecorderPlugin"))
-        {
-            pluginClass.CallStatic("StopRecording");
-        }
-        
-        ShowToast($"Đã lưu video ({duration:F0}s)");
-        #endif
     }
     
     public void ToggleFlash(string state)
@@ -368,9 +241,9 @@ public class CameraController : MonoBehaviour
         }
         
         // Stop recording nếu đang quay
-        if (isRecording)
+        if (videoRecorder != null && videoRecorder.IsRecording())
         {
-            StopRecording();
+            videoRecorder.StopRecording();
         }
     }
 }

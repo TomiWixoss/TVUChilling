@@ -1,0 +1,2 @@
+# Native library (.so) sẽ được copy vào đây sau khi build
+# Xem BUILD_INSTRUCTIONS.md để build native-video-encoder
