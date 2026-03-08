@@ -19,6 +19,10 @@ public class WebViewManager : MonoBehaviour
     [Header("Camera Controller")]
     [SerializeField] private CameraController cameraController;
     
+    [Header("AR Controllers")]
+    [SerializeField] private ARTrackedImageManager imageTracker;
+    [SerializeField] private PlacementController placementController;
+    
     void Start()
     {
         // Tự động tìm CameraController nếu chưa gán
@@ -34,6 +38,21 @@ public class WebViewManager : MonoBehaviour
                 cameraController = cameraControllerObj.AddComponent<CameraController>();
             }
         }
+        
+        // Tự động tìm AR components
+        if (imageTracker == null)
+        {
+            imageTracker = FindFirstObjectByType<ARTrackedImageManager>();
+        }
+        
+        if (placementController == null)
+        {
+            placementController = FindFirstObjectByType<PlacementController>();
+        }
+        
+        // Disable all modes ban đầu
+        if (imageTracker != null) imageTracker.enabled = false;
+        if (placementController != null) placementController.enabled = false;
         
         StartCoroutine(InitWebView());
     }
@@ -135,6 +154,22 @@ public class WebViewManager : MonoBehaviour
                     OnFlashToggle(data.data);
                     break;
                     
+                case "onModeSelect":
+                    OnModeSelect(data.data);
+                    break;
+                    
+                case "onPrefabSelect":
+                    OnPrefabSelect(data.data);
+                    break;
+                    
+                case "onPlacementDelete":
+                    OnPlacementDelete();
+                    break;
+                    
+                case "onPlacementClear":
+                    OnPlacementClear();
+                    break;
+                    
                 default:
                     Debug.LogWarning($"[WebView] Unknown method: {data.method}");
                     break;
@@ -145,8 +180,6 @@ public class WebViewManager : MonoBehaviour
             Debug.LogError($"[WebView] Failed to parse message: {e.Message}");
         }
     }
-    
-
     
     void OnCapturePhoto()
     {
@@ -190,7 +223,68 @@ public class WebViewManager : MonoBehaviour
         }
     }
     
-
+    void OnModeSelect(string mode)
+    {
+        Debug.Log($"[WebView] Mode selected: {mode}");
+        
+        // Disable all modes
+        if (imageTracker != null) imageTracker.enabled = false;
+        if (placementController != null) placementController.enabled = false;
+        
+        // Enable selected mode
+        switch (mode)
+        {
+            case "imageTracking":
+                if (imageTracker != null)
+                {
+                    imageTracker.enabled = true;
+                    Debug.Log("[WebView] Image tracking mode activated");
+                }
+                break;
+                
+            case "placement":
+                if (placementController != null)
+                {
+                    placementController.enabled = true;
+                    Debug.Log("[WebView] Placement mode activated");
+                }
+                break;
+                
+            case "none":
+                Debug.Log("[WebView] All modes disabled");
+                break;
+        }
+    }
+    
+    void OnPrefabSelect(string prefabIndex)
+    {
+        Debug.Log($"[WebView] Prefab selected: {prefabIndex}");
+        
+        if (placementController != null && int.TryParse(prefabIndex, out int index))
+        {
+            placementController.SetCurrentPrefab(index);
+        }
+    }
+    
+    void OnPlacementDelete()
+    {
+        Debug.Log("[WebView] Delete placement requested");
+        
+        if (placementController != null)
+        {
+            placementController.DeleteSelected();
+        }
+    }
+    
+    void OnPlacementClear()
+    {
+        Debug.Log("[WebView] Clear all placements requested");
+        
+        if (placementController != null)
+        {
+            placementController.ClearAll();
+        }
+    }
     
     string EscapeJS(string text)
     {
