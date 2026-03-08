@@ -130,6 +130,15 @@ bool VideoEncoder::SetupMediaCodec() {
 }
 
 bool VideoEncoder::SetupEGL() {
+    // Get Unity's current EGL context (MUST be called from Unity render thread)
+    EGLContext unityContext = eglGetCurrentContext();
+    if (unityContext == EGL_NO_CONTEXT) {
+        LOGE("Failed to get Unity's EGL context - not on render thread?");
+        return false;
+    }
+    
+    LOGI("Got Unity's EGL context: %p", unityContext);
+    
     // Get EGL display
     eglDisplay_ = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (eglDisplay_ == EGL_NO_DISPLAY) {
@@ -161,17 +170,19 @@ bool VideoEncoder::SetupEGL() {
         return false;
     }
     
-    // Create EGL context
+    // Create EGL context SHARED with Unity's context
     EGLint contextAttribs[] = {
         EGL_CONTEXT_CLIENT_VERSION, 3,
         EGL_NONE
     };
     
-    eglContext_ = eglCreateContext(eglDisplay_, config, EGL_NO_CONTEXT, contextAttribs);
+    eglContext_ = eglCreateContext(eglDisplay_, config, unityContext, contextAttribs);
     if (eglContext_ == EGL_NO_CONTEXT) {
-        LOGE("Failed to create EGL context");
+        LOGE("Failed to create shared EGL context");
         return false;
     }
+    
+    LOGI("Created shared EGL context: %p", eglContext_);
     
     // Create window surface from MediaCodec surface
     eglSurface_ = eglCreateWindowSurface(eglDisplay_, config, encoderSurface_, nullptr);
@@ -199,7 +210,7 @@ bool VideoEncoder::SetupEGL() {
         return false;
     }
     
-    LOGI("EGL setup complete");
+    LOGI("EGL setup complete with shared context");
     return true;
 }
 

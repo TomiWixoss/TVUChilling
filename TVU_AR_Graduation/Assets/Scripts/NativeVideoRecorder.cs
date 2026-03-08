@@ -12,7 +12,7 @@ public class NativeVideoRecorder : MonoBehaviour
     [SerializeField] private int videoWidth = 1920;
     [SerializeField] private int videoHeight = 1080;
     [SerializeField] private int videoFPS = 30;
-    [SerializeField] private int videoBitrate = 8000000; // 8 Mbps
+    [SerializeField] private int videoBitrate = 12000000; // 12 Mbps for better quality
     
     private RenderTexture recordingRenderTexture;
     private Camera targetCamera;
@@ -23,6 +23,12 @@ public class NativeVideoRecorder : MonoBehaviour
     void Awake()
     {
         targetCamera = Camera.main;
+        
+        // Auto-detect screen resolution and orientation
+        videoWidth = Screen.width;
+        videoHeight = Screen.height;
+        
+        Debug.Log($"[NativeVideoRecorder] Auto-detected resolution: {videoWidth}x{videoHeight}");
     }
     
     /// <summary>
@@ -119,20 +125,19 @@ public class NativeVideoRecorder : MonoBehaviour
     IEnumerator RecordingLoop()
     {
         WaitForEndOfFrame waitForEndOfFrame = new WaitForEndOfFrame();
-        float frameInterval = 1f / videoFPS;
         
         while (isRecording)
         {
             yield return waitForEndOfFrame;
             
-            // Render camera to RenderTexture
+            // Capture exactly what's on screen (what user sees)
             RenderTexture currentRT = RenderTexture.active;
-            RenderTexture.active = recordingRenderTexture;
             
+            // Render camera view to recording texture
+            RenderTexture.active = recordingRenderTexture;
             targetCamera.targetTexture = recordingRenderTexture;
             targetCamera.Render();
             targetCamera.targetTexture = null;
-            
             RenderTexture.active = currentRT;
             
             #if UNITY_ANDROID && !UNITY_EDITOR
@@ -150,9 +155,6 @@ public class NativeVideoRecorder : MonoBehaviour
                 }
             }
             #endif
-            
-            // Wait to maintain FPS
-            yield return new WaitForSeconds(frameInterval);
         }
     }
     
