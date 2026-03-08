@@ -39,7 +39,9 @@ public class ARImageTracker : MonoBehaviour
         foreach (ARTrackedImage trackedImage in eventArgs.added)
         {
             string imageName = trackedImage.referenceImage.name;
-            Debug.Log($"[AR] Image detected: {imageName}");
+            Debug.Log($"[AR] ✅ Image detected: {imageName}");
+            Debug.Log($"[AR] Image size: {trackedImage.size}");
+            Debug.Log($"[AR] Image position: {trackedImage.transform.position}");
 
             if (!spawnedObjects.ContainsKey(imageName))
             {
@@ -48,9 +50,16 @@ public class ARImageTracker : MonoBehaviour
                 if (prefabToSpawn != null)
                 {
                     GameObject obj = Instantiate(prefabToSpawn, trackedImage.transform);
+                    obj.transform.localPosition = Vector3.zero;
+                    obj.transform.localRotation = Quaternion.identity;
                     obj.SetActive(true);
                     spawnedObjects[imageName] = obj;
-                    Debug.Log($"[AR] Spawned {prefabToSpawn.name} for: {imageName}");
+                    Debug.Log($"[AR] ✅ Spawned {prefabToSpawn.name} for: {imageName}");
+                    Debug.Log($"[AR] Object scale: {obj.transform.localScale}");
+                }
+                else
+                {
+                    Debug.LogError($"[AR] ❌ No prefab found for: {imageName}");
                 }
             }
         }
@@ -59,11 +68,18 @@ public class ARImageTracker : MonoBehaviour
         foreach (ARTrackedImage trackedImage in eventArgs.updated)
         {
             string imageName = trackedImage.referenceImage.name;
+            bool isTracking = trackedImage.trackingState == TrackingState.Tracking;
+            
+            Debug.Log($"[AR] 🔄 Image updated: {imageName}, Tracking: {isTracking}, State: {trackedImage.trackingState}");
 
             if (spawnedObjects.TryGetValue(imageName, out GameObject obj))
             {
-                bool isTracking = trackedImage.trackingState == TrackingState.Tracking;
                 obj.SetActive(isTracking);
+                
+                if (!isTracking)
+                {
+                    Debug.LogWarning($"[AR] ⚠️ Lost tracking: {imageName}");
+                }
             }
         }
 
